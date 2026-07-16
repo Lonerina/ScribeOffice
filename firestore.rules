@@ -1,0 +1,161 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Test collection for startup connection checks
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // --- REUSABLE SECURITY PRIMITIVES ---
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isVerifiedUser() {
+      return isSignedIn();
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- VALIDATION BLUEPRINTS ---
+    
+    function isValidWorld(data) {
+      return data.worldName is string && data.worldName.size() <= 200
+        && data.genre is string && data.genre.size() <= 200
+        && data.description is string && data.description.size() <= 10000
+        && data.highConcept is string && data.highConcept.size() <= 10000
+        && data.ownerId == request.auth.uid;
+    }
+
+    function isValidCharacter(data) {
+      return data.name is string && data.name.size() <= 200
+        && data.role is string && data.role.size() <= 1000
+        && data.faction is string && data.faction.size() <= 1000
+        && data.bio is string && data.bio.size() <= 25000
+        && data.traits is list && data.traits.size() <= 100
+        && (!data.keys().hasAll(['appearance']) || (data.appearance is string && data.appearance.size() <= 10000))
+        && (!data.keys().hasAll(['relationships']) || (data.relationships is list && data.relationships.size() <= 200))
+        && (!data.keys().hasAll(['title']) || (data.title is string && data.title.size() <= 500))
+        && (!data.keys().hasAll(['roles']) || (data.roles is list && data.roles.size() <= 100))
+        && (!data.keys().hasAll(['tier']) || (data.tier is string && data.tier.size() <= 100))
+        && (!data.keys().hasAll(['element']) || (data.element is string && data.element.size() <= 100))
+        && (!data.keys().hasAll(['color']) || (data.color is string && data.color.size() <= 100))
+        && (!data.keys().hasAll(['function']) || (data.function is string && data.function.size() <= 10000))
+        && (!data.keys().hasAll(['identity']) || (data.identity is string && data.identity.size() <= 10000))
+        && (!data.keys().hasAll(['personality']) || (data.personality is string && data.personality.size() <= 10000))
+        && (!data.keys().hasAll(['originStory']) || (data.originStory is string && data.originStory.size() <= 25000))
+        && (!data.keys().hasAll(['experiences']) || (data.experiences is string && data.experiences.size() <= 25000))
+        && data.ownerId == request.auth.uid;
+    }
+
+    function isValidLoreDocument(data) {
+      return data.title is string && data.title.size() <= 200
+        && data.category is string && data.category.size() <= 100
+        && data.content is string && data.content.size() <= 50000
+        && data.version is number && data.version >= 1
+        && data.tags is list && data.tags.size() <= 50
+        && (!data.keys().hasAll(['relatedCharacterIds']) || (data.relatedCharacterIds is list && data.relatedCharacterIds.size() <= 100))
+        && (!data.keys().hasAll(['versionHistory']) || (data.versionHistory is list && data.versionHistory.size() <= 200))
+        && data.ownerId == request.auth.uid;
+    }
+
+    function isValidMessage(data) {
+      return data.sender is string && (data.sender == 'user' || data.sender == 'assistant')
+        && data.text is string && data.text.size() <= 25000
+        && data.timestamp is string && data.timestamp.size() <= 50
+        && (!data.keys().hasAll(['isSystemAudit']) || (data.isSystemAudit is bool))
+        && (!data.keys().hasAll(['attachments']) || (data.attachments is list && data.attachments.size() <= 10))
+        && data.ownerId == request.auth.uid;
+    }
+
+    // --- COLLECTION RULES MATCHES ---
+
+    // 1. Worlds Collection
+    match /worlds/{worldId} {
+      allow get: if isSignedIn() && (resource == null || existing().ownerId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      
+      allow create: if isVerifiedUser() && isValidId(worldId) 
+        && incoming().keys().hasAll(['worldName', 'genre', 'description', 'highConcept', 'ownerId'])
+        && incoming().keys().size() >= 5
+        && incoming().keys().size() <= 8
+        && isValidWorld(incoming());
+        
+      allow update: if isVerifiedUser() && isValidId(worldId)
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == request.auth.uid
+        && isValidWorld(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['worldName', 'genre', 'description', 'highConcept', 'updatedAt']);
+        
+      allow delete: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+ 
+      // 2. Characters Subcollection
+      match /characters/{characterId} {
+        allow get: if isSignedIn() && (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+        
+        allow create: if isVerifiedUser() && isValidId(characterId)
+          && incoming().ownerId == request.auth.uid
+          && incoming().keys().hasAll(['name', 'role', 'faction', 'bio', 'ownerId'])
+          && isValidCharacter(incoming());
+          
+        allow update: if isVerifiedUser() && isValidId(characterId)
+          && existing().ownerId == request.auth.uid
+          && incoming().ownerId == request.auth.uid
+          && isValidCharacter(incoming())
+          && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'role', 'faction', 'bio', 'traits', 'appearance', 'relationships', 'updatedAt', 'title', 'roles', 'tier', 'element', 'color', 'function', 'identity', 'personality', 'originStory', 'experiences']);
+          
+        allow delete: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      }
+ 
+      // 3. Lore Documents Subcollection
+      match /documents/{docId} {
+        allow get: if isSignedIn() && (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+        
+        allow create: if isVerifiedUser() && isValidId(docId)
+          && incoming().ownerId == request.auth.uid
+          && incoming().keys().hasAll(['title', 'category', 'content', 'version', 'ownerId'])
+          && isValidLoreDocument(incoming());
+          
+        allow update: if isVerifiedUser() && isValidId(docId)
+          && existing().ownerId == request.auth.uid
+          && incoming().ownerId == request.auth.uid
+          && isValidLoreDocument(incoming())
+          && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'content', 'tags', 'relatedCharacterIds', 'version', 'versionHistory', 'updatedAt']);
+          
+        allow delete: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      }
+ 
+      // 4. Session Messages Subcollection
+      match /messages/{messageId} {
+        allow get: if isSignedIn() && (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+        
+        allow create: if isVerifiedUser() && isValidId(messageId)
+          && incoming().ownerId == request.auth.uid
+          && incoming().keys().hasAll(['sender', 'text', 'timestamp', 'ownerId'])
+          && isValidMessage(incoming());
+          
+        allow update, delete: if false;
+      }
+    }
+
+  }
+}

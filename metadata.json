@@ -1,0 +1,6 @@
+{
+  "name": "World Building Lore & Character Organizer",
+  "description": "An AI-powered creative suite to organize world building lore, track characters, manage document updates, and audit story consistency using Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
