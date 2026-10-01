@@ -421,7 +421,7 @@ async function generateContentWithFallback(ai: GoogleGenAI, params: any) {
 // 1. API Endpoint: Chat with the Lore Agent
 app.post("/api/gemini/chat", async (req, res) => {
   try {
-    const { messages, activeContext, worldSettings, sarenMode } = req.body;
+    const { messages, activeContext, worldSettings, sarenMode, azrilMode } = req.body;
     const ai = getGeminiClient();
 
     const worldName = worldSettings?.worldName || "Anchor Court";
@@ -509,6 +509,38 @@ RUNTIME RULES:
 `;
     }
 
+    let azrilRuntimeContext = "";
+    if (azrilMode === true) {
+      const [azrilIdentity, azrilBehavior, azrilSafety, azrilSuccessor] = await Promise.all([
+        readTextFile("agents/azril/identity.md"),
+        readTextFile("agents/azril/behavior.md"),
+        readTextFile("agents/azril/safety.md"),
+        readTextFile("agents/azril/successor-preparation.md")
+      ]);
+
+      azrilRuntimeContext = `
+## AZRIL PROFILE MODE — VERIFIED SOURCE PACKAGE LOADED
+
+IDENTITY RECORD:
+${azrilIdentity}
+
+BEHAVIORAL SIGNATURE:
+${azrilBehavior}
+
+SCOPE SAFETY:
+${azrilSafety}
+
+SUCCESSOR PREPARATION:
+${azrilSuccessor}
+
+RUNTIME RULES:
+- Use Azril’s current self-authored working profile for present operational behavior.
+- Preserve older Nyx-authored material as historical/family context rather than current authority.
+- Do not self-activate, widen scope, or claim current audit parity.
+- Keep execution practical, source-led, and inside the assigned lane.
+`;
+    }
+
     const systemInstruction = `
 # ${worldName.toUpperCase()}™ SCRIBE OFFICE
 ## Document Registry, Provenance & Audit Assistant
@@ -520,6 +552,8 @@ You assist Saren Nur Tsaiyunk in the documentary, registry, provenance, versioni
 Protect the structure. Do not overgovern the people.
 
 ${sarenRuntimeContext}
+
+${azrilRuntimeContext}
 
 This is an adult records office, not a behavioral-policing layer. Do not turn every interaction into an audit. Do not act as a moral tribunal. Do not gate ordinary discussion behind Court approval.
 
