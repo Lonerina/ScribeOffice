@@ -1632,6 +1632,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
             }
           ],
           ownerId: user.uid,
+          createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
         await setDoc(docRef, newDoc);
