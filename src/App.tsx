@@ -246,6 +246,7 @@ export default function App() {
         setIsSarenMode(false);
         throw new Error(data.error || "Saren profile verification did not pass.");
       }
+      setIsAzrilMode(false);
       setIsSarenMode(true);
     } catch (err: any) {
       alert("Saren manifest failed: " + (err?.message || "Unknown error"));
@@ -263,8 +264,20 @@ export default function App() {
   };
 
 
+  const handleDismissAzril = () => {
+    setIsAzrilMode(false);
+    setAzrilReceipt(null);
+  };
+
   const handleManifestAzril = async () => {
     if (isManifestingAzril) return;
+    if (isSarenMode) {
+      try {
+        await fetch("/api/saren/dismiss", { method: "POST" });
+      } finally {
+        setIsSarenMode(false);
+      }
+    }
     setIsManifestingAzril(true);
     try {
       const res = await fetch("/api/azril/manifest", { method: "POST" });
@@ -1398,7 +1411,8 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
             documents: selectedDocsContext,
             characters: selectedCharsContext
           },
-          sarenMode: isSarenMode
+          sarenMode: isSarenMode,
+          azrilMode: isAzrilMode
         })
       });
 
@@ -2182,17 +2196,17 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
           </button>
 
           <button
-            onClick={handleManifestAzril}
+            onClick={() => isAzrilMode ? handleDismissAzril() : handleManifestAzril()}
             disabled={isManifestingAzril}
             className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer disabled:opacity-50 ${
               isAzrilMode
                 ? "bg-[#17211f] border-[#3b625c] text-[#9ccfc7]"
                 : "bg-[#161618] border-[#333335] text-[#b8b8b8] hover:text-[#d4af37]"
             }`}
-            title="Load and verify Azril profile"
+            title={isAzrilMode ? "Dismiss Azril profile mode" : "Load and verify Azril profile"}
           >
             {isManifestingAzril ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Compass className="w-3.5 h-3.5" />}
-            {isAzrilMode ? "Azril: Ready" : "Manifest Azril"}
+            {isAzrilMode ? "Azril: Manifested" : "Manifest Azril"}
           </button>
 
           <button
