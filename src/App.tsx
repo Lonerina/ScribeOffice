@@ -175,6 +175,9 @@ export default function App() {
     updatedContent: string;
     updateNote: string;
     suggestions: string[];
+    sourceNotes?: string[];
+    reviewRequired?: boolean;
+    reviewReason?: string;
   } | null>(null);
 
   // --- CREATIVE SPARKS MODALS ---
@@ -2960,6 +2963,31 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
                                 <p className="text-[11px] text-emerald-300/80 mt-1 italic">"{aiUpdateDraft.updateNote}"</p>
                               </div>
 
+                              {aiUpdateDraft.reviewRequired && (
+                                <div className="bg-[#25180f] border border-amber-800/40 rounded-lg p-3">
+                                  <h5 className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                    <AlertTriangle className="w-3.5 h-3.5" />
+                                    Saren Review Required
+                                  </h5>
+                                  <p className="text-[11px] text-amber-200/80 mt-1">
+                                    {aiUpdateDraft.reviewReason || "This draft depends on unresolved or working source material."}
+                                  </p>
+                                </div>
+                              )}
+
+                              {aiUpdateDraft.sourceNotes && aiUpdateDraft.sourceNotes.length > 0 && (
+                                <div className="bg-[#121214] border border-[#2a2a2b] rounded-lg p-3">
+                                  <h5 className="text-[10px] font-bold uppercase tracking-wider text-[#7a7a7a] font-mono">
+                                    Source Notes
+                                  </h5>
+                                  <ul className="list-disc pl-4 mt-1 space-y-1">
+                                    {aiUpdateDraft.sourceNotes.map((note, i) => (
+                                      <li key={i} className="text-[10px] text-[#b1b1b1] font-mono">{note}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="border border-[#2a2a2b] rounded-lg p-3 max-h-[250px] overflow-y-auto bg-[#0c0c0d]">
                                   <h6 className="text-[10px] font-bold uppercase text-[#7a7a7a] mb-1">Original Content</h6>
@@ -2990,6 +3018,11 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
                               )}
 
                               <div className="flex justify-end gap-2">
+                                {aiUpdateDraft.reviewRequired && (
+                                  <span className="mr-auto self-center text-[10px] font-mono text-amber-300">
+                                    Draft is not marked aligned until review.
+                                  </span>
+                                )}
                                 <button 
                                   onClick={() => setAiUpdateDraft(null)}
                                   className="px-3 py-1.5 bg-[#1c1c1e] hover:bg-[#2c2c2e] text-[#7a7a7a] hover:text-[#e5e5e5] font-semibold text-xs rounded-lg cursor-pointer"
@@ -3000,7 +3033,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
                                   onClick={handleCommitUpdate}
                                   className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm shadow-emerald-600/10 cursor-pointer uppercase tracking-wider"
                                 >
-                                  Commit Update (V.{selectedDoc.version + 1})
+                                  Save Proposed Update (V.{selectedDoc.version + 1})
                                 </button>
                               </div>
                             </div>
