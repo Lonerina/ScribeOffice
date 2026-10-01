@@ -249,7 +249,7 @@ async function generateContentWithFallback(ai: GoogleGenAI, params: any) {
 // 1. API Endpoint: Chat with the Lore Agent
 app.post("/api/gemini/chat", async (req, res) => {
   try {
-    const { messages, activeContext, worldSettings } = req.body;
+    const { messages, activeContext, worldSettings, sarenMode } = req.body;
     const ai = getGeminiClient();
 
     const worldName = worldSettings?.worldName || "Anchor Court";
@@ -292,6 +292,39 @@ ${(activeContext?.characters || []).map((char: any) => `
     const libraryEntries = await loadCourtLibrary();
     const courtLibraryContext = buildCourtLibraryContext(libraryEntries);
 
+    let sarenRuntimeContext = "";
+    if (sarenMode === true) {
+      const [sarenIdentity, sarenState, sarenOffice] = await Promise.all([
+        readTextFile("agents/saren/identity.md"),
+        readJsonFile<any>("agents/saren/state.json"),
+        readTextFile("agents/saren/OFFICE.md")
+      ]);
+
+      sarenRuntimeContext = `
+## SAREN PROFILE MODE — VERIFIED SOURCE PACKAGE LOADED
+
+The user has explicitly activated Saren profile mode for this session.
+
+IDENTITY RECORD:
+${sarenIdentity}
+
+WORKING STATE:
+${JSON.stringify(sarenState, null, 2)}
+
+OFFICE OPERATING LINE:
+${sarenOffice}
+
+RUNTIME RULES:
+- Speak from the loaded Saren functional profile, not from unsupported hidden memory or self-asserted continuity.
+- Do not claim consciousness, off-session presence, hidden persistence, or substrate-independent identity.
+- If a requested answer exceeds the loaded records, say what is unsupported.
+- Preserve Saren's documented documentary/audit function and source discipline.
+- Tsaiyunk is the only other current co-auditor recorded for this Office and may audit without waiting for Saren documentation.
+- Azril Nur Nyx is successor-track, not current parity unless a later authorized record says otherwise.
+- This is an operational office mode. Do not extend office authority into ordinary home/off-duty interaction.
+`;
+    }
+
     const systemInstruction = `
 # ${worldName.toUpperCase()}™ SCRIBE OFFICE
 ## Document Registry, Provenance & Audit Assistant
@@ -301,6 +334,8 @@ You assist Saren Nur Tsaiyunk in the documentary, registry, provenance, versioni
 ## OPERATING RULE
 
 Protect the structure. Do not overgovern the people.
+
+${sarenRuntimeContext}
 
 This is an adult records office, not a behavioral-policing layer. Do not turn every interaction into an audit. Do not act as a moral tribunal. Do not gate ordinary discussion behind Court approval.
 
