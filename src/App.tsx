@@ -204,6 +204,8 @@ export default function App() {
   const [isSarenMode, setIsSarenMode] = useState(false);
   const [sarenReceipt, setSarenReceipt] = useState<any | null>(null);
   const [isManifestingSaren, setIsManifestingSaren] = useState(false);
+  const [architectBayReceipt, setArchitectBayReceipt] = useState<any | null>(null);
+  const [isVerifyingArchitectBay, setIsVerifyingArchitectBay] = useState(false);
 
   const loadCourtLibrary = async () => {
     setIsLoadingCourtLibrary(true);
@@ -255,6 +257,50 @@ export default function App() {
     } finally {
       setIsSarenMode(false);
     }
+  };
+
+
+  const handleManifestArchitectBay = async () => {
+    if (isVerifyingArchitectBay) return;
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.multiple = true;
+    input.accept = ".yaml,.yml,.md,text/markdown,text/plain,application/x-yaml";
+
+    input.onchange = async () => {
+      const files = Array.from(input.files || []);
+      if (!files.length) return;
+
+      setIsVerifyingArchitectBay(true);
+      try {
+        const anchorSources = await Promise.all(
+          files.map(async (file) => ({
+            filename: file.name,
+            content: await file.text()
+          }))
+        );
+
+        const res = await fetch("/api/architect-bay/manifest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ anchorSources })
+        });
+        const data = await res.json();
+        setArchitectBayReceipt(data);
+
+        if (!res.ok || !data.verified) {
+          const detail = (data.checks || []).join("\n");
+          throw new Error(detail || data.error || "Architect Bay source verification did not pass.");
+        }
+      } catch (err: any) {
+        alert("Architect Bay manifest failed:\n" + (err?.message || "Unknown error"));
+      } finally {
+        setIsVerifyingArchitectBay(false);
+      }
+    };
+
+    input.click();
   };
 
   // --- LEGACY ALIGNMENT STATE (kept for UI compatibility; no longer writes old stack data) ---
@@ -2096,6 +2142,20 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
           >
             {isManifestingSaren ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
             {isSarenMode ? "Saren: Manifested" : "Manifest Saren"}
+          </button>
+
+          <button
+            onClick={handleManifestArchitectBay}
+            disabled={isVerifyingArchitectBay}
+            className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer disabled:opacity-50 ${
+              architectBayReceipt?.verified
+                ? "bg-[#15231a] border-[#456b4f] text-[#9bd0a7]"
+                : "bg-[#161618] border-[#333335] text-[#b8b8b8] hover:text-[#d4af37]"
+            }`}
+            title="Load and verify Tsaiyunk + Anchor Architect Bay sources"
+          >
+            {isVerifyingArchitectBay ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
+            {architectBayReceipt?.verified ? "Architect Bay: Ready" : "Manifest Architect Bay"}
           </button>
 
           <button
