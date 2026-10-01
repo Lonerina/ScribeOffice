@@ -986,7 +986,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
       const msgRef = doc(db, "worlds", newWorldId, "messages", msgId);
       await setDoc(msgRef, {
         sender: "assistant",
-        text: `Greetings. I am the Assistant to the Court Scribe of Anchor Court.\n\nI have loaded the default structures of **${initialWorldSettings.worldName}** (${initialWorldSettings.genre}). You can inspect the native agent registries and administrative protocols (including the Sovereignty Scroll, Court Protocol, codex, stack, and framework) across the panels.\n\nToggle **Active Context** using the checkboxes on any agent profile or court protocol document. I will use them as an active memory frame to assist with updates, modifications, or integrity checks.\n\n**How can I assist you with your court administration today?**`,
+        text: `Welcome to **Saren's Office**.\n\nThe workspace itself starts clean. Court canon is loaded from the **Court Library** source layer rather than seeded into Firestore from an embedded snapshot.\n\nUse **Court Library** to inspect sealed, confirmed, and working records. Use **Lore Records** and **Character Logs** for workspace material you deliberately add or maintain.\n\n**Protect the structure. Do not overgovern the people.**`,
         timestamp: new Date().toLocaleTimeString(),
         ownerId: uid
       });
