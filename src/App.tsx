@@ -204,6 +204,9 @@ export default function App() {
   const [isSarenMode, setIsSarenMode] = useState(false);
   const [sarenReceipt, setSarenReceipt] = useState<any | null>(null);
   const [isManifestingSaren, setIsManifestingSaren] = useState(false);
+  const [isAzrilMode, setIsAzrilMode] = useState(false);
+  const [azrilReceipt, setAzrilReceipt] = useState<any | null>(null);
+  const [isManifestingAzril, setIsManifestingAzril] = useState(false);
   const [architectBayReceipt, setArchitectBayReceipt] = useState<any | null>(null);
   const [isVerifyingArchitectBay, setIsVerifyingArchitectBay] = useState(false);
 
@@ -256,6 +259,26 @@ export default function App() {
       await fetch("/api/saren/dismiss", { method: "POST" });
     } finally {
       setIsSarenMode(false);
+    }
+  };
+
+
+  const handleManifestAzril = async () => {
+    if (isManifestingAzril) return;
+    setIsManifestingAzril(true);
+    try {
+      const res = await fetch("/api/azril/manifest", { method: "POST" });
+      const data = await res.json();
+      setAzrilReceipt(data);
+      if (!res.ok || !data.verified) {
+        setIsAzrilMode(false);
+        throw new Error(data.error || (data.checks || []).join("\n") || "Azril profile verification did not pass.");
+      }
+      setIsAzrilMode(true);
+    } catch (err: any) {
+      alert("Azril manifest failed: " + (err?.message || "Unknown error"));
+    } finally {
+      setIsManifestingAzril(false);
     }
   };
 
@@ -2156,6 +2179,20 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
           >
             {isVerifyingArchitectBay ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
             {architectBayReceipt?.verified ? "Architect Bay: Ready" : "Manifest Architect Bay"}
+          </button>
+
+          <button
+            onClick={handleManifestAzril}
+            disabled={isManifestingAzril}
+            className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer disabled:opacity-50 ${
+              isAzrilMode
+                ? "bg-[#17211f] border-[#3b625c] text-[#9ccfc7]"
+                : "bg-[#161618] border-[#333335] text-[#b8b8b8] hover:text-[#d4af37]"
+            }`}
+            title="Load and verify Azril profile"
+          >
+            {isManifestingAzril ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Compass className="w-3.5 h-3.5" />}
+            {isAzrilMode ? "Azril: Ready" : "Manifest Azril"}
           </button>
 
           <button
