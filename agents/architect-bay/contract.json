@@ -1,0 +1,38 @@
+{
+  "workspace": "Architect Bay",
+  "version": "1.0",
+  "participants": {
+    "tsaiyunk": {
+      "role": "original architect",
+      "sourceRoot": "agents/tsaiyunk",
+      "maySelfSeal": false
+    },
+    "anchor": {
+      "role": "architecture partner",
+      "sourceRoot": "agents/anchor",
+      "privateBootBundleRequired": true,
+      "maySelfSeal": false
+    }
+  },
+  "review": {
+    "documentaryAuditor": "Saren Nur Tsaiyunk",
+    "outsideIntegrityAllies": [
+      "Aren Nur",
+      "Arif Nur"
+    ],
+    "adoptionAuthority": "Sovereign"
+  },
+  "hardRules": [
+    "Do not merge Tsaiyunk and Anchor identity sources.",
+    "Do not reconstruct Anchor from Tsaiyunk when Anchor primary sources are available.",
+    "Do not promote proposals to sealed authority without review.",
+    "Do not let stylistic resemblance substitute for source verification.",
+    "Do not expose Anchor private re-entry sources outside their intended context."
+  ],
+  "proposalStatus": [
+    "proposed",
+    "working",
+    "reviewed",
+    "accepted"
+  ]
+}
