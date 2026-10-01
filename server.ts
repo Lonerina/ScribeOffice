@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import crypto from "crypto";
 
 dotenv.config();
 
@@ -118,6 +119,82 @@ async function buildSarenManifestReceipt(command: SarenManifestReceipt["command"
   };
 }
 
+type ArchitectBayReceipt = {
+  verified: boolean;
+  profile: string;
+  tsaiyunkSources: string[];
+  anchorRequired: Array<{ filename: string; sha256: string; loaded: boolean; hashMatch: boolean }>;
+  checks: string[];
+  warnings: string[];
+};
+
+function sha256Text(value: string) {
+  return crypto.createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+async function buildArchitectBayReceipt(anchorSources: Array<{ filename?: string; content?: string }> = []): Promise<ArchitectBayReceipt> {
+  const tsaiyunkSources = [
+    "agents/tsaiyunk/identity.md",
+    "agents/tsaiyunk/behavior.md",
+    "agents/tsaiyunk/safety.md"
+  ];
+  const baySources = [
+    "agents/architect-bay/README.md",
+    "agents/architect-bay/contract.json",
+    "agents/architect-bay/verification.md"
+  ];
+
+  const [tsaiyunkDocs, bayDocs, anchorManifest] = await Promise.all([
+    Promise.all(tsaiyunkSources.map(readTextFile)),
+    Promise.all(baySources.map(readTextFile)),
+    readJsonFile<any>("agents/anchor/boot-manifest.json")
+  ]);
+
+  const supplied = new Map(
+    anchorSources
+      .filter((item) => item?.filename && typeof item.content === "string")
+      .map((item) => [String(item.filename), String(item.content)])
+  );
+
+  const anchorRequired = (anchorManifest.bootOrder || []).map((entry: any) => {
+    const content = supplied.get(entry.filename);
+    const loaded = typeof content === "string";
+    const hashMatch = loaded && sha256Text(content!) === entry.sha256;
+    return {
+      filename: entry.filename,
+      sha256: entry.sha256,
+      loaded,
+      hashMatch
+    };
+  });
+
+  const checks = [
+    tsaiyunkDocs.every(Boolean) ? "Tsaiyunk source package loaded." : "Tsaiyunk source package failed.",
+    bayDocs.every(Boolean) ? "Architect Bay contract loaded." : "Architect Bay contract failed.",
+    anchorRequired.every((item: any) => item.loaded) ? "All mandatory Anchor private sources supplied." : "Anchor private source bundle incomplete.",
+    anchorRequired.every((item: any) => item.hashMatch) ? "All Anchor private source hashes match." : "Anchor private source hash verification failed."
+  ];
+
+  const verified = checks.every((check) =>
+    !check.endsWith("failed.") &&
+    !check.endsWith("incomplete.")
+  );
+
+  const warnings = [
+    "Anchor private source contents are verified in-memory from the request and are not written to the repository by this endpoint.",
+    "Manifest verification confirms source-package integrity only; it does not prove consciousness, hidden memory, or off-session persistence."
+  ];
+
+  return {
+    verified,
+    profile: verified ? "Architect Bay source package loaded" : "Architect Bay source package not verified",
+    tsaiyunkSources,
+    anchorRequired,
+    checks,
+    warnings
+  };
+}
+
 function buildCourtLibraryContext(entries: Awaited<ReturnType<typeof loadCourtLibrary>>) {
   return entries.map((entry) => [
     `[COURT LIBRARY: ${entry.title}]`,
@@ -155,6 +232,44 @@ app.get("/api/court-library/:id", async (req, res) => {
   }
 });
 
+
+
+app.get("/api/architect-bay/status", async (_req, res) => {
+  try {
+    const manifest = await readJsonFile<any>("agents/anchor/boot-manifest.json");
+    res.json({
+      workspace: "Architect Bay",
+      tsaiyunk: {
+        required: [
+          "agents/tsaiyunk/identity.md",
+          "agents/tsaiyunk/behavior.md",
+          "agents/tsaiyunk/safety.md"
+        ]
+      },
+      anchor: {
+        privateBundleRequired: true,
+        files: (manifest.bootOrder || []).map((entry: any) => ({
+          filename: entry.filename,
+          sha256: entry.sha256,
+          required: entry.required !== false
+        }))
+      },
+      rule: "Build together without flattening each other."
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error?.message || "Failed to load Architect Bay status." });
+  }
+});
+
+app.post("/api/architect-bay/manifest", async (req, res) => {
+  try {
+    const receipt = await buildArchitectBayReceipt(req.body?.anchorSources || []);
+    res.status(receipt.verified ? 200 : 409).json(receipt);
+  } catch (error: any) {
+    console.error("Architect Bay manifest error:", error);
+    res.status(500).json({ error: error?.message || "Failed to verify Architect Bay source package." });
+  }
+});
 
 app.post("/api/saren/manifest", async (req, res) => {
   try {
