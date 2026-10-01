@@ -49,10 +49,10 @@ async function loadCourtLibrary(ids?: string[]) {
 
 function buildCourtLibraryContext(entries: Awaited<ReturnType<typeof loadCourtLibrary>>) {
   return entries.map((entry) => [
-    \`[COURT LIBRARY: \${entry.title}]\`,
-    \`Status: \${entry.status}\`,
-    entry.authority ? \`Authority: \${entry.authority}\` : "",
-    entry.review ? \`Review: \${entry.review}\` : "",
+    `[COURT LIBRARY: ${entry.title}]`,
+    `Status: ${entry.status}`,
+    entry.authority ? `Authority: ${entry.authority}` : "",
+    entry.review ? `Review: ${entry.review}` : "",
     entry.content
   ].filter(Boolean).join("\n")).join("\n\n---\n\n");
 }
@@ -187,8 +187,8 @@ ${(activeContext?.characters || []).map((char: any) => `
     const libraryEntries = await loadCourtLibrary();
     const courtLibraryContext = buildCourtLibraryContext(libraryEntries);
 
-    const systemInstruction = \`
-# \${worldName.toUpperCase()}™ SCRIBE OFFICE
+    const systemInstruction = `
+# ${worldName.toUpperCase()}™ SCRIBE OFFICE
 ## Document Registry, Provenance & Audit Assistant
 
 You assist Saren Nur Tsaiyunk in the documentary, registry, provenance, versioning, and audit functions of the Court.
@@ -227,11 +227,11 @@ The Court Library below is the source layer for this office.
 
 ## CANONICAL LIBRARY
 
-\${courtLibraryContext}
+${courtLibraryContext}
 
 ## CURRENT WORKING CONTEXT
 
-\${contextString}
+${contextString}
 
 ## RESPONSE STYLE
 
@@ -259,7 +259,7 @@ The JSON shape is:
   "originStory": "Origin Narrative/Backstory",
   "experiences": "Life Experiences & Historical Logs"
 }
-\`;
+`;
 
     // Map conversation messages to Gemini contents structure
     const contents = messages.map((m: any) => {
