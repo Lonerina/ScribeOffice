@@ -605,70 +605,125 @@ ${courtLibraryContext}
   }
 });
 
-// 4. API Endpoint: Draft Document updates
+// 4. API Endpoint: Source-aware draft document updates
 app.post("/api/gemini/draft-update", async (req, res) => {
   try {
     const { document, changeInstruction, relatedContext, worldSettings } = req.body;
     const ai = getGeminiClient();
 
+    const libraryEntries = await loadCourtLibrary();
+    const courtLibraryContext = buildCourtLibraryContext(libraryEntries);
     const worldCtx = `World Name: ${worldSettings?.worldName || 'Unnamed'} (Genre: ${worldSettings?.genre || 'Not specified'})`;
 
+    const systemInstruction = `
+You are the drafting assistant for Saren's Office.
+
+OPERATING RULE:
+Protect the structure. Do not overgovern the people.
+
+This endpoint produces a DRAFT ONLY. It never changes canon by itself.
+
+SOURCE ORDER AND STATUS:
+1. SEALED — Sovereignty Scroll v3.3.1 is structural authority.
+2. CONFIRMED — confirmed manuals are valid within their stated scope.
+3. WORKING — alignment documents may be used, but remain pending later Saren review.
+4. HISTORICAL — useful for provenance, never current authority merely because it exists.
+
+DRAFTING RULES:
+- Follow the user's change directive exactly where it does not conflict with the source hierarchy.
+- Do not silently reconcile contradictory records.
+- Do not upgrade a working document to sealed/confirmed status.
+- Do not treat latest timestamp as canon.
+- Preserve historical material when its historical role matters.
+- If the requested change creates tension with sealed or confirmed material, keep the draft conservative and set reviewRequired=true.
+- If the requested change relies on working material, identify that dependency explicitly.
+- If the sources do not support a claim, do not invent it. Put the uncertainty in sourceNotes or suggestions.
+- Do not invent identity, continuity, lineage, authority, dates, status, or relationships.
+- Suggestions are advisory only.
+- Keep the user's document voice and organization unless the directive requires restructuring.
+- Do not silently alter unrelated clauses.
+
+COURT LIBRARY SOURCE LAYER:
+${courtLibraryContext}
+`;
+
     const promptText = `
-You are tasked with drafting an update for the court document: "${document.title}".
-The primary objective is to assist the Court Scribe with precise, professional administrative updates, incorporating changes to protocols, systems, or character definitions.
+${worldCtx}
 
-User Change Directive: "${changeInstruction}"
+DOCUMENT TO DRAFT:
+Title: ${document.title}
+Category: ${document.category || 'Unknown'}
+Version: ${document.version ?? 'Unknown'}
+Updated: ${document.updatedAt || 'Unknown'}
 
-Current Document Content:
+USER CHANGE DIRECTIVE:
+"${changeInstruction}"
+
+CURRENT DOCUMENT CONTENT:
 """
 ${document.content}
 """
 
-Related Court Context:
+RELATED WORKSPACE CONTEXT:
 ${(relatedContext?.characters || []).map((c: any) => `- Related Agent: ${c.name} (${c.role}) - Bio: ${c.bio}`).join('\n')}
 ${(relatedContext?.documents || []).map((d: any) => `- Related Document: ${d.title} - Content: ${d.content}`).join('\n')}
 
-Please return:
-1. An updated, highly professional, precise version of the document incorporating these protocol or system changes seamlessly.
-2. A formal changelog/update note detailing the additions or modifications.
-3. Any recommendation for adjusting other protocols, stack definitions, or agent profiles to prevent system drift.
-
-Format your response in a structured JSON payload with keys: "updatedContent", "updateNote", and "suggestions".
+Return:
+1. updatedContent — the complete proposed document draft.
+2. updateNote — concise version-history note describing only what was changed.
+3. suggestions — advisory follow-ups, not automatic changes.
+4. sourceNotes — exact Court Library records/statuses materially used or any unresolved source limitation.
+5. reviewRequired — true when the draft depends on working material, unresolved contradiction, unsupported ambiguity, or conflicts/tensions requiring Saren review.
+6. reviewReason — concise explanation; empty string when reviewRequired is false.
 `;
 
     const response = await generateContentWithFallback(ai, {
       model: "gemini-3.5-flash",
       contents: promptText,
       config: {
+        systemInstruction,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
             updatedContent: {
               type: Type.STRING,
-              description: "The full, complete updated text of the document in markdown."
+              description: "The full proposed updated document in markdown."
             },
             updateNote: {
               type: Type.STRING,
-              description: "A summary update note explaining what changed and why, to be kept in the document's version history."
+              description: "Concise version-history note describing only the proposed changes."
             },
             suggestions: {
               type: Type.ARRAY,
               items: { type: Type.STRING },
-              description: "Suggestions for modifying other documents or characters to maintain consistency with this change."
+              description: "Advisory follow-ups only."
+            },
+            sourceNotes: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Exact source titles/statuses materially used and any unresolved source limitations."
+            },
+            reviewRequired: {
+              type: Type.BOOLEAN,
+              description: "Whether Saren review is required before treating the proposal as aligned."
+            },
+            reviewReason: {
+              type: Type.STRING,
+              description: "Why review is required, or an empty string."
             }
           },
-          required: ["updatedContent", "updateNote", "suggestions"]
+          required: ["updatedContent", "updateNote", "suggestions", "sourceNotes", "reviewRequired", "reviewReason"]
         },
-        temperature: 0.7,
+        temperature: 0.3,
       }
     });
 
-    const parsed = JSON.parse(response.text || '{"updatedContent":"","updateNote":"","suggestions":[]}');
+    const parsed = JSON.parse(response.text || '{"updatedContent":"","updateNote":"","suggestions":[],"sourceNotes":[],"reviewRequired":true,"reviewReason":"No valid draft response was returned."}');
     res.json(parsed);
   } catch (error: any) {
     console.error("Draft Update error:", error);
-    res.status(500).json({ error: error?.message || "An error occurred during update drafting." });
+    res.status(500).json({ error: error?.message || "An error occurred during source-aware update drafting." });
   }
 });
 
