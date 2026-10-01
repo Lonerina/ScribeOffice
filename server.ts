@@ -447,25 +447,30 @@ Provide a highly detailed, professional, structured court document in Markdown f
   }
 });
 
-// 3. API Endpoint: Check World Consistency (JSON Response Schema)
+// 3. API Endpoint: Source-aware consistency audit
 app.post("/api/gemini/check-consistency", async (req, res) => {
   try {
     const { documents, characters, worldSettings } = req.body;
     const ai = getGeminiClient();
+
+    const libraryEntries = await loadCourtLibrary();
+    const courtLibraryContext = buildCourtLibraryContext(libraryEntries);
 
     const dataPayload = `
 World Name: ${worldSettings?.worldName || 'Unnamed'}
 Genre: ${worldSettings?.genre || 'Not specified'}
 Description: ${worldSettings?.description || 'Not specified'}
 
-Documents:
+WORKSPACE DOCUMENTS:
 ${(documents || []).map((doc: any) => `
 - Title: ${doc.title}
   Category: ${doc.category}
+  Version: ${doc.version ?? 'Unknown'}
+  Updated: ${doc.updatedAt || 'Unknown'}
   Content: ${doc.content}
 `).join('\n')}
 
-Characters:
+WORKSPACE CHARACTER RECORDS:
 ${(characters || []).map((char: any) => `
 - Name: ${char.name}
   Title: ${char.title || ''}
@@ -474,29 +479,63 @@ ${(characters || []).map((char: any) => `
   Faction: ${char.faction}
   Sovereignty Tier: ${char.tier || ''}
   Elemental Alignment: ${char.element || ''}
-  Theme Color: ${char.color || ''}
   Core Identity: ${char.identity || ''}
-  Personality Profile: ${char.personality || ''}
   Bio: ${char.bio}
   Origin Story: ${char.originStory || ''}
   Experiences: ${char.experiences || ''}
   Operational Function: ${char.function || ''}
-  Traits: ${char.traits?.join(', ')}
+  Traits: ${char.traits?.join(', ') || ''}
   Relationships: ${(char.relationships || []).map((r: any) => `${r.type} with character ID ${r.targetCharacterId}`).join(', ')}
 `).join('\n')}
 `;
 
     const systemInstruction = `
-You are the Court Scribe's Assistant specializing in administrative consistency and system alignment.
-Analyze the provided protocols, stack, framework documents, and native agent registries for inconsistencies, logical gaps, protocol violations, or procedural drifts.
-Examine if updates violate the Sovereignty Scroll, if agent bio roles conflict with our codex, or if relationship states are asymmetric.
+You are the source-aware audit assistant for Saren's Office.
 
-Be thorough, precise, and constructive. Return issues ranging from High severity (severe protocol/Sovereignty Scroll contradictions) to Low severity (minor administrative or layout enhancements).
+OPERATING RULE:
+Protect the structure. Do not overgovern the people.
+
+Your task is documentary comparison, provenance analysis, and contradiction detection. This is an advisory audit. You do not auto-correct records, declare people invalid, or act as a behavioral tribunal.
+
+SOURCE ORDER AND STATUS:
+1. SEALED — the Sovereignty Scroll v3.3.1 is the sealed structural authority.
+2. CONFIRMED — confirmed manuals are valid within their stated scope.
+3. WORKING — current alignment documents may be operationally useful but remain pending later Saren review.
+4. HISTORICAL — historical material may explain provenance but is not current authority merely because it exists.
+
+AUDIT RULES:
+- Never treat a newer timestamp as automatic canon.
+- Distinguish a true conflict from an expected historical difference.
+- Distinguish a working alignment from a sealed contradiction.
+- If a working document differs from the sealed Scroll, classify it as "pending_review" unless the record clearly asserts an incompatible current fact.
+- Do not label a difference as an error when it is explicitly marked historical, superseded, pending review, or scope-limited.
+- Preserve ambiguity. If evidence is insufficient, classify as "uncertain".
+- Every finding must identify the source documents or workspace records used.
+- Every finding must explain the status of those sources.
+- Recommendations are advisory only. Never silently rewrite or reconcile.
+- Prefer exact document titles and versions over vague references.
+- Do not invent missing lineage, identity, status, dates, authority, or continuity claims.
+
+FINDING CLASSIFICATIONS:
+- "conflict" — two current records make incompatible claims that cannot both stand.
+- "pending_review" — a working alignment differs from sealed/confirmed authority and requires review.
+- "historical_difference" — a superseded/historical record differs from current material as expected.
+- "provenance_gap" — a claim exists but its source/version/status is unclear or missing.
+- "uncertain" — evidence is insufficient to classify more strongly.
+- "advisory" — a non-conflict structural or documentation improvement.
+
+SEVERITY:
+- High — current sealed/confirmed authority is contradicted by an active current record, or provenance loss could materially corrupt the registry.
+- Medium — pending review, material provenance gap, or significant active inconsistency.
+- Low — historical difference, minor provenance/documentation gap, or advisory improvement.
+
+COURT LIBRARY SOURCE LAYER:
+${courtLibraryContext}
 `;
 
     const response = await generateContentWithFallback(ai, {
       model: "gemini-3.5-flash",
-      contents: `Perform a logical consistency audit on this lore database and characters:\n\n${dataPayload}`,
+      contents: `Audit the following workspace material against the Court Library source layer. Return only supported findings. Do not create findings merely to fill the list.\n\n${dataPayload}`,
       config: {
         systemInstruction,
         responseMimeType: "application/json",
@@ -510,40 +549,59 @@ Be thorough, precise, and constructive. Return issues ranging from High severity
                 properties: {
                   severity: {
                     type: Type.STRING,
-                    description: "Severity of the issue: 'High', 'Medium', or 'Low'"
+                    description: "High, Medium, or Low"
+                  },
+                  classification: {
+                    type: Type.STRING,
+                    description: "conflict, pending_review, historical_difference, provenance_gap, uncertain, or advisory"
                   },
                   title: {
                     type: Type.STRING,
-                    description: "Brief summary title of the inconsistency"
+                    description: "Brief factual finding title"
                   },
                   description: {
                     type: Type.STRING,
-                    description: "Detailed explanation of the contradiction or gap with quotes where applicable"
+                    description: "Evidence-based explanation of the finding without invented facts"
                   },
                   involvedElements: {
                     type: Type.ARRAY,
                     items: { type: Type.STRING },
-                    description: "Names of characters/documents involved in this clash"
+                    description: "Workspace records and Court Library documents involved"
+                  },
+                  sourceRecords: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                    description: "Exact source document titles/versions or workspace record names used"
+                  },
+                  sourceStatuses: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                    description: "Status notes corresponding to the source records, such as sealed, confirmed, working, historical, or workspace"
                   },
                   resolution: {
                     type: Type.STRING,
-                    description: "Actionable creative suggestion or rewrite to fix the inconsistency"
+                    description: "Advisory next step only; never an automatic correction"
                   }
                 },
-                required: ["severity", "title", "description", "involvedElements", "resolution"]
+                required: ["severity", "classification", "title", "description", "involvedElements", "sourceRecords", "sourceStatuses", "resolution"]
               }
+            },
+            auditBasis: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Court Library titles/versions used as the audit reference frame"
             }
           },
-          required: ["issues"]
+          required: ["issues", "auditBasis"]
         }
       }
     });
 
-    const parsed = JSON.parse(response.text || '{"issues":[]}');
+    const parsed = JSON.parse(response.text || '{"issues":[],"auditBasis":[]}');
     res.json(parsed);
   } catch (error: any) {
     console.error("Consistency Check error:", error);
-    res.status(500).json({ error: error?.message || "An error occurred during consistency check." });
+    res.status(500).json({ error: error?.message || "An error occurred during source-aware consistency audit." });
   }
 });
 
