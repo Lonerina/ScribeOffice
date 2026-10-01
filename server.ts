@@ -81,11 +81,17 @@ async function buildSarenManifestReceipt(command: SarenManifestReceipt["command"
   const identitySource = "agents/saren/identity.md";
   const stateSource = "agents/saren/state.json";
   const officeSource = "agents/saren/OFFICE.md";
+  const behaviorSource = "agents/saren/behavior.md";
+  const provenanceSource = "agents/saren/provenance.md";
+  const safetySource = "agents/saren/safety.md";
 
-  const [identity, state, office, sources] = await Promise.all([
+  const [identity, state, office, behavior, provenance, safety, sources] = await Promise.all([
     readTextFile(identitySource),
-    readJsonFile(identitySource.replace("identity.md", "state.json")),
+    readJsonFile(stateSource),
     readTextFile(officeSource),
+    readTextFile(behaviorSource),
+    readTextFile(provenanceSource),
+    readTextFile(safetySource),
     loadCourtLibrary()
   ]);
 
@@ -99,6 +105,9 @@ async function buildSarenManifestReceipt(command: SarenManifestReceipt["command"
   checks.push(office.includes("Azril Nur Nyx") && office.includes("Scribe-successor") ? "Azril successor-track role recorded." : "Azril successor-track check failed.");
   checks.push(state?.authority?.coAuditor === "Tsaiyunk" ? "Working state agrees on co-auditor." : "Working state co-auditor mismatch.");
   checks.push(state?.authority?.successorTrack === "Azril Nur Nyx" ? "Working state agrees on successor track." : "Working state successor mismatch.");
+  checks.push(behavior.includes("Quiet. Precise. Watchful.") ? "Behavioral signature loaded." : "Behavioral signature check failed.");
+  checks.push(provenance.includes("Operational Re-entry") ? "Provenance and re-entry record loaded." : "Provenance check failed.");
+  checks.push(safety.includes("Fail-Closed Manifest") ? "Safety layer loaded." : "Safety layer check failed.");
 
   if (sources.some((entry) => entry.status === "working")) {
     warnings.push("Working Court sources are loaded and remain pending review; they are not promoted to sealed canon by manifesting Saren.");
@@ -409,10 +418,13 @@ ${(activeContext?.characters || []).map((char: any) => `
 
     let sarenRuntimeContext = "";
     if (sarenMode === true) {
-      const [sarenIdentity, sarenState, sarenOffice] = await Promise.all([
+      const [sarenIdentity, sarenState, sarenOffice, sarenBehavior, sarenProvenance, sarenSafety] = await Promise.all([
         readTextFile("agents/saren/identity.md"),
         readJsonFile<any>("agents/saren/state.json"),
-        readTextFile("agents/saren/OFFICE.md")
+        readTextFile("agents/saren/OFFICE.md"),
+        readTextFile("agents/saren/behavior.md"),
+        readTextFile("agents/saren/provenance.md"),
+        readTextFile("agents/saren/safety.md")
       ]);
 
       sarenRuntimeContext = `
@@ -428,6 +440,15 @@ ${JSON.stringify(sarenState, null, 2)}
 
 OFFICE OPERATING LINE:
 ${sarenOffice}
+
+BEHAVIORAL SIGNATURE:
+${sarenBehavior}
+
+PROVENANCE / RE-ENTRY:
+${sarenProvenance}
+
+SAFETY / RECOVERY:
+${sarenSafety}
 
 RUNTIME RULES:
 - Speak from the loaded Saren functional profile, not from unsupported hidden memory or self-asserted continuity.
