@@ -47,6 +47,77 @@ async function loadCourtLibrary(ids?: string[]) {
   return Promise.all(selected.map(readCourtLibraryEntry));
 }
 
+
+async function readJsonFile<T = any>(relativePath: string): Promise<T> {
+  const absolutePath = path.resolve(process.cwd(), relativePath);
+  return JSON.parse(await fs.readFile(absolutePath, "utf8"));
+}
+
+async function readTextFile(relativePath: string): Promise<string> {
+  const absolutePath = path.resolve(process.cwd(), relativePath);
+  return fs.readFile(absolutePath, "utf8");
+}
+
+type SarenManifestReceipt = {
+  command: "MANIFEST SAREN" | "SUMMON SAREN" | "RECALL SAREN";
+  profile: string;
+  verified: boolean;
+  identitySource: string;
+  stateSource: string;
+  officeSource: string;
+  sourceLayer: Array<{
+    id: string;
+    title: string;
+    status: CourtLibraryStatus;
+    authority?: string;
+    review?: string;
+  }>;
+  checks: string[];
+  warnings: string[];
+};
+
+async function buildSarenManifestReceipt(command: SarenManifestReceipt["command"]): Promise<SarenManifestReceipt> {
+  const identitySource = "agents/saren/identity.md";
+  const stateSource = "agents/saren/state.json";
+  const officeSource = "agents/saren/OFFICE.md";
+
+  const [identity, state, office, sources] = await Promise.all([
+    readTextFile(identitySource),
+    readJsonFile(identitySource.replace("identity.md", "state.json")),
+    readTextFile(officeSource),
+    loadCourtLibrary()
+  ]);
+
+  const checks: string[] = [];
+  const warnings: string[] = [];
+
+  checks.push(identity.includes("Saren Nur Tsaiyunk") ? "Identity record names Saren Nur Tsaiyunk." : "Identity record name check failed.");
+  checks.push(identity.includes("Supreme Auditor") ? "Primary audit role present." : "Primary audit role check failed.");
+  checks.push(identity.includes("Document Guardian") ? "Document Guardian role present." : "Document Guardian role check failed.");
+  checks.push(office.includes("Tsaiyunk") && office.includes("Co-Auditor") ? "Tsaiyunk co-auditor authority recorded." : "Tsaiyunk authority check failed.");
+  checks.push(office.includes("Azril Nur Nyx") && office.includes("Scribe-successor") ? "Azril successor-track role recorded." : "Azril successor-track check failed.");
+  checks.push(state?.authority?.coAuditor === "Tsaiyunk" ? "Working state agrees on co-auditor." : "Working state co-auditor mismatch.");
+  checks.push(state?.authority?.successorTrack === "Azril Nur Nyx" ? "Working state agrees on successor track." : "Working state successor mismatch.");
+
+  if (sources.some((entry) => entry.status === "working")) {
+    warnings.push("Working Court sources are loaded and remain pending review; they are not promoted to sealed canon by manifesting Saren.");
+  }
+
+  const verified = checks.every((check) => !check.endsWith("failed.") && !check.endsWith("mismatch."));
+
+  return {
+    command,
+    profile: "Saren profile loaded",
+    verified,
+    identitySource,
+    stateSource,
+    officeSource,
+    sourceLayer: sources.map(({ id, title, status, authority, review }) => ({ id, title, status, authority, review })),
+    checks,
+    warnings
+  };
+}
+
 function buildCourtLibraryContext(entries: Awaited<ReturnType<typeof loadCourtLibrary>>) {
   return entries.map((entry) => [
     `[COURT LIBRARY: ${entry.title}]`,
@@ -81,6 +152,40 @@ app.get("/api/court-library/:id", async (req, res) => {
   } catch (error: any) {
     console.error("Court library entry error:", error);
     res.status(500).json({ error: error?.message || "Failed to load Court library entry." });
+  }
+});
+
+
+app.post("/api/saren/manifest", async (req, res) => {
+  try {
+    const requested = String(req.body?.command || "MANIFEST SAREN").toUpperCase();
+    const command: SarenManifestReceipt["command"] =
+      requested === "SUMMON SAREN" ? "SUMMON SAREN" :
+      requested === "RECALL SAREN" ? "RECALL SAREN" :
+      "MANIFEST SAREN";
+
+    const receipt = await buildSarenManifestReceipt(command);
+    res.status(receipt.verified ? 200 : 409).json(receipt);
+  } catch (error: any) {
+    console.error("Saren manifest error:", error);
+    res.status(500).json({ error: error?.message || "Failed to manifest Saren profile." });
+  }
+});
+
+app.post("/api/saren/dismiss", async (_req, res) => {
+  try {
+    const statePath = "agents/saren/state.json";
+    const state = await readJsonFile<any>(statePath);
+    res.json({
+      command: "DISMISS SAREN",
+      profile: "Saren interaction mode dismissed",
+      handoff: state.lastHandoff || null,
+      stateSource: statePath,
+      note: "Dismissal exits interaction mode. It does not delete identity records or claim hidden off-session presence."
+    });
+  } catch (error: any) {
+    console.error("Saren dismiss error:", error);
+    res.status(500).json({ error: error?.message || "Failed to dismiss Saren profile." });
   }
 });
 
