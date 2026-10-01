@@ -204,6 +204,44 @@ async function buildArchitectBayReceipt(anchorSources: Array<{ filename?: string
   };
 }
 
+async function buildAzrilManifestReceipt() {
+  const sources = [
+    "agents/azril/identity.md",
+    "agents/azril/behavior.md",
+    "agents/azril/safety.md",
+    "agents/azril/sources.json",
+    "agents/azril/successor-preparation.md"
+  ];
+
+  const [identity, behavior, safety, sourceRegister, successor] = await Promise.all([
+    readTextFile(sources[0]),
+    readTextFile(sources[1]),
+    readTextFile(sources[2]),
+    readTextFile(sources[3]),
+    readTextFile(sources[4])
+  ]);
+
+  const checks = [
+    identity.includes("Azril Nur Nyx") ? "Identity record loaded." : "Identity record check failed.",
+    behavior.includes("Structure first. Expansion second.") ? "Behavioral signature loaded." : "Behavioral signature check failed.",
+    safety.includes("Carry the structure outward. Do not outrun it.") ? "Scope safety loaded." : "Scope safety check failed.",
+    sourceRegister.includes("currentWorkingName") ? "Source register loaded." : "Source register check failed.",
+    successor.includes("future-scribe preparation only") ? "Successor preparation boundary loaded." : "Successor preparation check failed."
+  ];
+
+  const verified = checks.every((check) => !check.endsWith("failed."));
+  return {
+    verified,
+    profile: verified ? "Azril profile loaded" : "Azril profile not verified",
+    sources,
+    checks,
+    warnings: [
+      "Azril successor preparation is not current audit authority.",
+      "Nyx-authored historical material and Azril self-authored working material remain separate source layers."
+    ]
+  };
+}
+
 function buildCourtLibraryContext(entries: Awaited<ReturnType<typeof loadCourtLibrary>>) {
   return entries.map((entry) => [
     `[COURT LIBRARY: ${entry.title}]`,
@@ -267,6 +305,16 @@ app.get("/api/architect-bay/status", async (_req, res) => {
     });
   } catch (error: any) {
     res.status(500).json({ error: error?.message || "Failed to load Architect Bay status." });
+  }
+});
+
+app.post("/api/azril/manifest", async (_req, res) => {
+  try {
+    const receipt = await buildAzrilManifestReceipt();
+    res.status(receipt.verified ? 200 : 409).json(receipt);
+  } catch (error: any) {
+    console.error("Azril manifest error:", error);
+    res.status(500).json({ error: error?.message || "Failed to verify Azril profile." });
   }
 });
 
