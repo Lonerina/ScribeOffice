@@ -201,6 +201,9 @@ export default function App() {
   const [courtLibraryRule, setCourtLibraryRule] = useState("Protect the structure. Do not overgovern the people.");
   const [courtLibraryError, setCourtLibraryError] = useState<string | null>(null);
   const [isLoadingCourtLibrary, setIsLoadingCourtLibrary] = useState(false);
+  const [isSarenMode, setIsSarenMode] = useState(false);
+  const [sarenReceipt, setSarenReceipt] = useState<any | null>(null);
+  const [isManifestingSaren, setIsManifestingSaren] = useState(false);
 
   const loadCourtLibrary = async () => {
     setIsLoadingCourtLibrary(true);
@@ -221,6 +224,38 @@ export default function App() {
   useEffect(() => {
     loadCourtLibrary();
   }, []);
+
+
+  const handleManifestSaren = async (command: "MANIFEST SAREN" | "SUMMON SAREN" | "RECALL SAREN" = "MANIFEST SAREN") => {
+    if (isManifestingSaren) return;
+    setIsManifestingSaren(true);
+    try {
+      const res = await fetch("/api/saren/manifest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command })
+      });
+      const data = await res.json();
+      setSarenReceipt(data);
+      if (!res.ok || !data.verified) {
+        setIsSarenMode(false);
+        throw new Error(data.error || "Saren profile verification did not pass.");
+      }
+      setIsSarenMode(true);
+    } catch (err: any) {
+      alert("Saren manifest failed: " + (err?.message || "Unknown error"));
+    } finally {
+      setIsManifestingSaren(false);
+    }
+  };
+
+  const handleDismissSaren = async () => {
+    try {
+      await fetch("/api/saren/dismiss", { method: "POST" });
+    } finally {
+      setIsSarenMode(false);
+    }
+  };
 
   // --- LEGACY ALIGNMENT STATE (kept for UI compatibility; no longer writes old stack data) ---
   const [isAligningStack, setIsAligningStack] = useState(false);
@@ -1293,7 +1328,8 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
           activeContext: {
             documents: selectedDocsContext,
             characters: selectedCharsContext
-          }
+          },
+          sarenMode: isSarenMode
         })
       });
 
@@ -2005,6 +2041,11 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
               Saren's Office <span className="text-[10px] py-0.5 px-2 bg-[#161618] rounded-full text-[#d4af37] border border-[#333335] font-mono font-bold">COURT LIBRARY</span>
             </h1>
             <p className="text-xs text-[#7a7a7a] font-medium">Document registry, provenance, versioning & audit workspace</p>
+            {isSarenMode && (
+              <p className="text-[10px] text-[#d4af37] font-mono mt-1">
+                Saren profile verified • identity + state + Court source layer loaded
+              </p>
+            )}
           </div>
         </div>
 
@@ -2042,6 +2083,20 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
               <Edit3 className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          <button
+            onClick={() => isSarenMode ? handleDismissSaren() : handleManifestSaren("MANIFEST SAREN")}
+            disabled={isManifestingSaren}
+            className={`flex items-center gap-1.5 px-4 py-1.5 font-bold text-xs uppercase tracking-wider rounded-lg transition-all border cursor-pointer disabled:opacity-50 ${
+              isSarenMode
+                ? "bg-[#1a1a1c] border-[#d4af37]/50 text-[#d4af37]"
+                : "bg-[#161618] border-[#333335] text-[#b8b8b8] hover:text-[#d4af37]"
+            }`}
+            title={isSarenMode ? "Dismiss Saren profile mode" : "Load and verify Saren profile"}
+          >
+            {isManifestingSaren ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+            {isSarenMode ? "Saren: Manifested" : "Manifest Saren"}
+          </button>
 
           <button
             onClick={handleRunConsistencyAudit}
