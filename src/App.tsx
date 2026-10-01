@@ -1426,7 +1426,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
       const auditMsgRef = doc(db, "worlds", activeWorldId, "messages", auditMsgId);
       await setDoc(auditMsgRef, {
         sender: "assistant",
-        text: `📊 **Continuity Audit Completed!** I scanned ${documents.length} lore records and ${characters.length} character logs. I discovered **${(data.issues || []).length} timeline/lore contradictions** of varying severities. Review them in the **Consistency Hub** tab.`,
+        text: `📊 **Source-Aware Audit Completed.** I compared ${documents.length} lore records and ${characters.length} character logs against the Court Library source layer. I recorded **${(data.issues || []).length} supported findings**. Review them in the **Consistency Hub** tab.`,
         timestamp: new Date().toLocaleTimeString(),
         isSystemAudit: true,
         ownerId: user.uid
@@ -3612,7 +3612,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
                     <div>
                       <h3 className="text-lg font-serif italic text-[#e5e5e5]">Protocol Alignment Audit</h3>
                       <p className="text-[#b1b1b1] text-xs mt-1 leading-relaxed">
-                        Execute an administrative alignment check across your entire court. The Scribe Assistant scans for protocol gaps, schema drifts, and mismatched agent registries.
+                        Compare workspace records against the Court Library source layer. Findings preserve provenance and distinguish sealed conflicts, working alignments, historical differences, review items, and uncertainty.
                       </p>
                     </div>
                   </div>
@@ -3639,7 +3639,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
                 {consistencyIssues.length > 0 ? (
                   <div className="space-y-4">
                     <span className="text-xs font-semibold uppercase tracking-wider text-[#7a7a7a] font-mono block">
-                      Detected Logical Anomaly Reports ({consistencyIssues.length})
+                      Source-Aware Audit Findings ({consistencyIssues.length})
                     </span>
 
                     <div className="grid grid-cols-1 gap-4">
@@ -3661,6 +3661,11 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
                                 }`}>
                                   {issue.severity} Severity
                                 </span>
+                                {"classification" in issue && (issue as any).classification && (
+                                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full font-bold border bg-[#161618] text-[#b1b1b1] border-[#333335]">
+                                    {(issue as any).classification.replace(/_/g, " ")}
+                                  </span>
+                                )}
                                 {issue.title}
                               </h4>
                               
@@ -3675,8 +3680,24 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
 
                             <p className="text-[#b1b1b1] text-xs leading-relaxed">{issue.description}</p>
 
+                            {"sourceRecords" in issue && Array.isArray((issue as any).sourceRecords) && (issue as any).sourceRecords.length > 0 && (
+                              <div className="bg-[#121214] border border-[#2a2a2b] rounded-lg p-3 space-y-2">
+                                <span className="text-[10px] uppercase tracking-wider font-mono font-bold text-[#7a7a7a] block">Evidence / Provenance</span>
+                                <div className="space-y-1">
+                                  {(issue as any).sourceRecords.map((src: string, i: number) => (
+                                    <div key={i} className="text-[10px] font-mono text-[#b1b1b1] flex flex-wrap gap-2">
+                                      <span>{src}</span>
+                                      {(issue as any).sourceStatuses?.[i] && (
+                                        <span className="text-[#7a7a7a]">[{(issue as any).sourceStatuses[i]}]</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
                             <div className="bg-[#121c16] border border-emerald-900/30 rounded-lg p-3 space-y-1">
-                              <span className="text-[10px] uppercase tracking-wider font-mono font-bold text-[#d4af37] block">Scribe's Proposed Resolution</span>
+                              <span className="text-[10px] uppercase tracking-wider font-mono font-bold text-[#d4af37] block">Advisory Next Step</span>
                               <p className="text-[#b1b1b1] text-xs italic leading-relaxed">"{issue.resolution}"</p>
                             </div>
                           </div>
@@ -3687,8 +3708,8 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
                 ) : (
                   <div className="flex flex-col items-center justify-center text-center p-12 bg-[#0f0f10] border border-[#2a2a2b] rounded-2xl">
                     <CheckCircle className="w-12 h-12 text-emerald-400" />
-                    <h4 className="font-serif italic text-[#e5e5e5] mt-3">Continuity Shield Intact</h4>
-                    <p className="text-[#7a7a7a] text-xs mt-1">No major contradictions or narrative clashing have been registered. Run a sweep if you've recently modified documents or characters.</p>
+                    <h4 className="font-serif italic text-[#e5e5e5] mt-3">No Supported Findings</h4>
+                    <p className="text-[#7a7a7a] text-xs mt-1">The current audit returned no supported conflicts, review items, provenance gaps, or other reportable findings. Run another sweep after records change.</p>
                   </div>
                 )}
 
