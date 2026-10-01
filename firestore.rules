@@ -22,7 +22,8 @@ service cloud.firestore {
     }
     
     function isVerifiedUser() {
-      return isSignedIn();
+      return isSignedIn()
+        && request.auth.token.email_verified == true;
     }
 
     function incoming() {
@@ -100,6 +101,7 @@ service cloud.firestore {
       allow update: if isVerifiedUser() && isValidId(worldId)
         && existing().ownerId == request.auth.uid
         && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == existing().createdAt
         && isValidWorld(incoming())
         && incoming().diff(existing()).affectedKeys().hasOnly(['worldName', 'genre', 'description', 'highConcept', 'updatedAt']);
         
@@ -112,12 +114,13 @@ service cloud.firestore {
         
         allow create: if isVerifiedUser() && isValidId(characterId)
           && incoming().ownerId == request.auth.uid
-          && incoming().keys().hasAll(['name', 'role', 'faction', 'bio', 'ownerId'])
+          && incoming().keys().hasAll(['name', 'role', 'faction', 'bio', 'ownerId', 'createdAt'])
           && isValidCharacter(incoming());
           
         allow update: if isVerifiedUser() && isValidId(characterId)
           && existing().ownerId == request.auth.uid
           && incoming().ownerId == request.auth.uid
+          && incoming().createdAt == existing().createdAt
           && isValidCharacter(incoming())
           && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'role', 'faction', 'bio', 'traits', 'appearance', 'relationships', 'updatedAt', 'title', 'roles', 'tier', 'element', 'color', 'function', 'identity', 'personality', 'originStory', 'experiences']);
           
