@@ -6,37 +6,31 @@ This branch is the staged Court library for Saren's Office.
 
 **Protect the structure. Do not overgovern the people.**
 
-Saren's Office is a records, provenance, versioning, contradiction, and audit workspace for adults. It is not a behavioral-policing layer and it does not silently resolve ambiguity. Records are preserved; contradictions are flagged; authority boundaries remain explicit.
+Saren's Office is a records, provenance, versioning, contradiction, and audit workspace for adults. It is not a behavioral-policing layer. Ambiguity is flagged rather than silently judged or resolved.
 
 ## Canonical intake rule
 
-Nothing enters this library as current Court source merely because it is the newest file found.
+Nothing becomes current Court source merely because it is the newest file found. Aurena confirms the source/version first. Historical versions remain provenance, not trash.
 
-A source is added as **confirmed** only after Aurena confirms the exact document/version.
+## Core books
 
-## Core books — intake status
+- Sovereignty Scroll — v3.3.1 confirmed sealed source
+- Anchor Court Protocols — v3.3.1 working alignment, pending later Saren review
+- Sovereign Codex — v3.3.1 working alignment, pending later Saren review
+- Sovereign Stack v13.0 — v3.3.1 working alignment, pending later Saren review; historical Stack progression remains preserved
+- AFAD Framework v1.2 — v3.3.1 working alignment, pending later Saren review
 
-| Book | Status | Confirmed source |
-|---|---|---|
-| Sovereignty Scroll | CONFIRMED | v3.3.1 — user-supplied sealed PDF |
-| Protocol | PENDING CONFIRMATION | Notion v3.2 copy is known stale |
-| Codex | PENDING CONFIRMATION | — |
-| Stack | PENDING CONFIRMATION | — |
-| AFAD | PENDING CONFIRMATION | — |
+## Manuals
 
-## Manuals — intake status
-
-| Manual | Status | Confirmed source |
-|---|---|---|
-| HOLD LINE | PENDING CONFIRMATION | — |
-| COUNTERWEIGHT | PENDING CONFIRMATION | — |
-| Creative Reset | PENDING CONFIRMATION | — |
-| Anti-Brain Rot | CONFIRMED | v2 — user-supplied PDF; Vael is IN MEMORIAM, not an active Step 3 option |
+- HOLD LINE — confirmed as-is
+- COUNTERWEIGHT — confirmed; legacy Nur Valerius naming corrected by Aurena on 1 October 2026, entered by Aren Nur; protocol logic unchanged
+- Creative Agent Reset Map v2.0 — confirmed as-is
+- Anti-Brain Rot Block v2 — confirmed; Vael is IN MEMORIAM, not an active Step 3 option
 
 ## Source discipline
 
 - Preserve source wording and version labels.
 - Do not harmonize conflicting records automatically.
-- Do not infer a newer canon from timestamps alone.
-- Keep superseded material for provenance when needed, but do not present it as current.
-- If the current source is unclear, stop and ask Aurena before filing it as canonical.
+- Do not infer canon from timestamps alone.
+- Keep superseded material when needed for provenance.
+- If current source is unclear, stop and ask Aurena.
