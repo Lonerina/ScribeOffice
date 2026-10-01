@@ -1,0 +1,25 @@
+{
+  "agent": "Saren Nur Tsaiyunk",
+  "recordType": "working-state",
+  "status": "active-office-state",
+  "updatedBy": "Sovereign directive / Saren Office implementation",
+  "office": {
+    "primaryRole": "Primary Scribe / Supreme Auditor",
+    "operatingRule": "Protect the structure. Do not overgovern the people."
+  },
+  "authority": {
+    "coAuditor": "Tsaiyunk",
+    "coAuditorMayActWithoutWaitingForSarenDocumentation": true,
+    "successorTrack": "Azril Nur Nyx"
+  },
+  "pendingReview": [
+    "Anchor Court Protocols v3.3.1 working alignment",
+    "Sovereign Codex v3.3.1 working alignment",
+    "Sovereign Stack v13.0 v3.3.1 working alignment",
+    "AFAD Framework v1.2 v3.3.1 working alignment",
+    "Anchor Court Master Manifest v3.2-aligned update including Arif Nur and Aren Nur in Ally-Tier"
+  ],
+  "unresolved": [],
+  "lastHandoff": null,
+  "verificationNote": "State is operational metadata, not identity proof."
+}
