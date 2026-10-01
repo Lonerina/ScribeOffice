@@ -67,7 +67,8 @@ service cloud.firestore {
 
     function isValidLoreDocument(data) {
       return data.title is string && data.title.size() <= 200
-        && data.category is string && data.category.size() <= 100
+        && data.category is string
+        && data.category in ['Geography', 'Magic System', 'History', 'Factions', 'Culture', 'Technology', 'Other', 'Core Charter', 'Legal & Operations', 'Architecture', 'System Safeguards']
         && data.content is string && data.content.size() <= 50000
         && data.version is number && data.version >= 1
         && data.tags is list && data.tags.size() <= 50
@@ -134,12 +135,13 @@ service cloud.firestore {
         
         allow create: if isVerifiedUser() && isValidId(docId)
           && incoming().ownerId == request.auth.uid
-          && incoming().keys().hasAll(['title', 'category', 'content', 'version', 'ownerId'])
+          && incoming().keys().hasAll(['title', 'category', 'content', 'version', 'ownerId', 'createdAt'])
           && isValidLoreDocument(incoming());
           
         allow update: if isVerifiedUser() && isValidId(docId)
           && existing().ownerId == request.auth.uid
           && incoming().ownerId == request.auth.uid
+          && (!existing().keys().hasAll(['createdAt']) || incoming().createdAt == existing().createdAt)
           && isValidLoreDocument(incoming())
           && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'content', 'tags', 'relatedCharacterIds', 'version', 'versionHistory', 'updatedAt']);
           
