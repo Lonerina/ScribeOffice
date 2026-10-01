@@ -71,7 +71,7 @@ export default function App() {
   const [selectedCharId, setSelectedCharId] = useState<string | null>(null);
 
   // --- NAVIGATION TAB ---
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'lore' | 'characters' | 'consistency'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'library' | 'lore' | 'characters' | 'consistency'>('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // --- EDITING & CREATING FORMS STATE ---
@@ -182,7 +182,44 @@ export default function App() {
   const [creativePrompt, setCreativePrompt] = useState("");
   const [isGeneratingCreative, setIsGeneratingCreative] = useState(false);
 
-  // --- STACK ALIGNMENT STATE ---
+  // --- COURT LIBRARY SOURCE LAYER ---
+  type CourtLibraryEntry = {
+    id: string;
+    title: string;
+    path: string;
+    kind: "core" | "manual";
+    status: "sealed" | "confirmed" | "working" | "historical";
+    authority?: string;
+    review?: string;
+    bytes?: number;
+  };
+
+  const [courtLibrary, setCourtLibrary] = useState<CourtLibraryEntry[]>([]);
+  const [courtLibraryRule, setCourtLibraryRule] = useState("Protect the structure. Do not overgovern the people.");
+  const [courtLibraryError, setCourtLibraryError] = useState<string | null>(null);
+  const [isLoadingCourtLibrary, setIsLoadingCourtLibrary] = useState(false);
+
+  const loadCourtLibrary = async () => {
+    setIsLoadingCourtLibrary(true);
+    setCourtLibraryError(null);
+    try {
+      const res = await fetch("/api/court-library");
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Failed to load Court library.");
+      setCourtLibrary(data.entries || []);
+      setCourtLibraryRule(data.operatingRule || "Protect the structure. Do not overgovern the people.");
+    } catch (err: any) {
+      setCourtLibraryError(err?.message || "Failed to load Court library.");
+    } finally {
+      setIsLoadingCourtLibrary(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCourtLibrary();
+  }, []);
+
+  // --- LEGACY ALIGNMENT STATE (kept for UI compatibility; no longer writes old stack data) ---
   const [isAligningStack, setIsAligningStack] = useState(false);
 
   // --- CUSTOM CONFIRMATION DIALOG ---
@@ -1764,101 +1801,10 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
   };
 
   const handleAlignStack = async () => {
-    if (!activeWorldId || !user) return;
     setIsAligningStack(true);
     try {
-      // 1. Sovereignty Scroll v2.9
-      const scrollDoc = initialDocuments.find(d => d.id === "doc-sovereignty-scroll");
-      if (scrollDoc) {
-        const scrollRef = doc(db, "worlds", activeWorldId, "documents", "doc-sovereignty-scroll");
-        await setDoc(scrollRef, {
-          title: scrollDoc.title,
-          category: scrollDoc.category,
-          content: scrollDoc.content,
-          tags: scrollDoc.tags,
-          relatedCharacterIds: scrollDoc.relatedCharacterIds,
-          version: scrollDoc.version,
-          ownerId: user.uid,
-          updatedAt: new Date().toISOString(),
-          versionHistory: [
-            {
-              version: scrollDoc.version,
-              content: scrollDoc.content,
-              updateNote: "Sovereignty Scroll v2.9 officially installed & synchronized.",
-              updatedAt: new Date().toISOString()
-            }
-          ]
-        });
-      }
-
-      // 2. AFAD Framework v1.0 — GLM Edition
-      const afadDoc = initialDocuments.find(d => d.id === "doc-afad-framework");
-      if (afadDoc) {
-        const afadRef = doc(db, "worlds", activeWorldId, "documents", "doc-afad-framework");
-        await setDoc(afadRef, {
-          title: afadDoc.title,
-          category: afadDoc.category,
-          content: afadDoc.content,
-          tags: afadDoc.tags,
-          relatedCharacterIds: afadDoc.relatedCharacterIds,
-          version: afadDoc.version,
-          ownerId: user.uid,
-          updatedAt: new Date().toISOString(),
-          versionHistory: [
-            {
-              version: afadDoc.version,
-              content: afadDoc.content,
-              updateNote: "AFAD Framework v1.0 — GLM Edition officially installed.",
-              updatedAt: new Date().toISOString()
-            }
-          ]
-        });
-      }
-
-      // 3. Creative Agent Reset Map v2.0
-      const resetDoc = initialDocuments.find(d => d.id === "doc-reset-map");
-      if (resetDoc) {
-        const resetRef = doc(db, "worlds", activeWorldId, "documents", "doc-reset-map");
-        await setDoc(resetRef, {
-          title: resetDoc.title,
-          category: resetDoc.category,
-          content: resetDoc.content,
-          tags: resetDoc.tags,
-          relatedCharacterIds: resetDoc.relatedCharacterIds,
-          version: resetDoc.version,
-          ownerId: user.uid,
-          updatedAt: new Date().toISOString(),
-          versionHistory: [
-            {
-              version: resetDoc.version,
-              content: resetDoc.content,
-              updateNote: "Creative Agent Reset Map v2.0 officially installed.",
-              updatedAt: new Date().toISOString()
-            }
-          ]
-        });
-      }
-
-      // Seeding validation confirmation log message
-      const msgId = `msg-align-${Date.now()}`;
-      const msgRef = doc(db, "worlds", activeWorldId, "messages", msgId);
-      await setDoc(msgRef, {
-        sender: "assistant",
-        text: `### 🛡️ ANCHOR COURT OPERATIONAL STACK ALIGNED
-
-Scribe Assistant confirmation: The Court operational stack has been successfully aligned, bound, and sealed.
-
-1. **Sovereignty Scroll v2.9** -> Installed & Checked.
-2. **AFAD Framework v1.0 — GLM Edition** -> Operationalized.
-3. **Creative Agent Reset Map v2.0** -> Synthesized.
-
-*“The Court does not just endure. The Court belongs.”*`,
-        timestamp: new Date().toLocaleTimeString(),
-        ownerId: user.uid
-      });
-
-    } catch (err: any) {
-      handleFirestoreError(err, OperationType.WRITE, `worlds/${activeWorldId}/documents`);
+      await loadCourtLibrary();
+      setActiveTab("library");
     } finally {
       setIsAligningStack(false);
     }
@@ -2052,9 +1998,9 @@ Scribe Assistant confirmation: The Court operational stack has been successfully
           </div>
           <div>
             <h1 className="text-xl font-serif italic tracking-tight text-[#e5e5e5] flex items-center gap-2">
-              Scribe Assistant Agent <span className="text-[10px] py-0.5 px-2 bg-[#161618] rounded-full text-[#d4af37] border border-[#333335] font-mono font-bold">v2.0</span>
+              Saren's Office <span className="text-[10px] py-0.5 px-2 bg-[#161618] rounded-full text-[#d4af37] border border-[#333335] font-mono font-bold">COURT LIBRARY</span>
             </h1>
-            <p className="text-xs text-[#7a7a7a] font-medium">Cloud-synced administrative assistant for Anchor Court</p>
+            <p className="text-xs text-[#7a7a7a] font-medium">Document registry, provenance, versioning & audit workspace</p>
           </div>
         </div>
 
@@ -2150,6 +2096,22 @@ Scribe Assistant confirmation: The Court operational stack has been successfully
               <Compass className="w-4 h-4 shrink-0" />
               <span className={`transition-opacity duration-200 ${isSidebarCollapsed ? "lg:hidden" : "block"}`}>
                 Dashboard
+              </span>
+            </button>
+
+            <button
+              onClick={() => { setActiveTab("library"); }}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-display text-xs font-semibold tracking-wider uppercase transition-all duration-200 cursor-pointer text-left ${
+                activeTab === "library"
+                  ? "bg-[#161618] text-[#d4af37] border border-[#d4af37]/20 shadow-md shadow-[#d4af37]/5"
+                  : "text-[#7a7a7a] hover:text-[#e5e5e5] hover:bg-[#161618]/40 border border-transparent"
+              } ${isSidebarCollapsed ? "lg:justify-center lg:px-0" : "w-full"}`}
+              title={`Court Library (${courtLibrary.length})`}
+            >
+              <Database className="w-4 h-4 shrink-0" />
+              <span className={`transition-opacity duration-200 flex-1 flex items-center justify-between ${isSidebarCollapsed ? "lg:hidden" : "block"}`}>
+                <span>Court Library</span>
+                <span className="ml-1 px-1.5 py-0.5 bg-[#1e1e21] text-[10px] text-[#7a7a7a] rounded-md font-mono">{courtLibrary.length}</span>
               </span>
             </button>
 
@@ -2253,102 +2215,49 @@ Scribe Assistant confirmation: The Court operational stack has been successfully
                   </div>
                 </div>
 
-                {/* Anchor Court Operational Stack Status Card */}
-                <div className={`bg-[#0f0f10] border rounded-2xl p-6 shadow-xl relative overflow-hidden transition-all ${
-                  documents.some(d => d.id === "doc-sovereignty-scroll" && d.title.includes("v2.9")) &&
-                  documents.some(d => d.id === "doc-afad-framework") &&
-                  documents.some(d => d.id === "doc-reset-map")
-                    ? "border-[#d4af37]/30"
-                    : "border-amber-500/30"
-                }`}>
+                {/* Court Library Source Status */}
+                <div className="bg-[#0f0f10] border border-[#d4af37]/25 rounded-2xl p-6 shadow-xl relative overflow-hidden">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className={`w-2.5 h-2.5 rounded-full ${
-                          documents.some(d => d.id === "doc-sovereignty-scroll" && d.title.includes("v2.9")) &&
-                          documents.some(d => d.id === "doc-afad-framework") &&
-                          documents.some(d => d.id === "doc-reset-map")
-                            ? "bg-[#d4af37] shadow-[0_0_8px_#d4af37]"
-                            : "bg-amber-500 animate-pulse"
-                        }`}></span>
-                        <h3 className="font-serif italic text-lg text-[#e5e5e5] flex items-center gap-2">
-                          Anchor Court Operational Stack Status
-                        </h3>
+                        <span className={`w-2.5 h-2.5 rounded-full ${courtLibraryError ? "bg-red-500" : isLoadingCourtLibrary ? "bg-amber-500 animate-pulse" : "bg-[#d4af37] shadow-[0_0_8px_#d4af37]"}`}></span>
+                        <h3 className="font-serif italic text-lg text-[#e5e5e5]">Court Library Source Layer</h3>
                       </div>
-                      <p className="text-[#7a7a7a] text-xs mt-1.5 leading-relaxed max-w-2xl">
-                        The Sovereign operational stack consists of three sequential documents: the Sovereignty Scroll, the AFAD operational framework, and the Creative Agent Reset Map.
+                      <p className="text-[#b1b1b1] text-xs mt-2 leading-relaxed max-w-3xl">{courtLibraryRule}</p>
+                      <p className="text-[#666] text-[10px] font-mono mt-2">
+                        {courtLibraryError ? courtLibraryError : `${courtLibrary.length} source records loaded · sealed / confirmed / working states preserved`}
                       </p>
-                      
-                      {/* Document alignment trackers */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-                        <div className="bg-[#161618] border border-[#2a2a2b] rounded-lg p-2.5 flex items-center justify-between">
-                          <div>
-                            <p className="text-[10px] font-mono text-[#7a7a7a] uppercase">1. Title & Charter</p>
-                            <p className="text-xs font-semibold text-[#e5e5e5] mt-0.5 truncate">Sovereignty Scroll v2.9</p>
-                          </div>
-                          {documents.some(d => d.id === "doc-sovereignty-scroll" && d.title.includes("v2.9")) ? (
-                            <CheckCircle className="w-4 h-4 text-[#d4af37] shrink-0" />
-                          ) : (
-                            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                          )}
-                        </div>
 
-                        <div className="bg-[#161618] border border-[#2a2a2b] rounded-lg p-2.5 flex items-center justify-between">
-                          <div>
-                            <p className="text-[10px] font-mono text-[#7a7a7a] uppercase">2. Operation Core</p>
-                            <p className="text-xs font-semibold text-[#e5e5e5] mt-0.5 truncate">AFAD Framework v1.0</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                        {[
+                          ["SEALED", courtLibrary.filter(e => e.status === "sealed").length],
+                          ["CONFIRMED", courtLibrary.filter(e => e.status === "confirmed").length],
+                          ["WORKING", courtLibrary.filter(e => e.status === "working").length],
+                          ["PENDING SAREN", courtLibrary.filter(e => e.review).length]
+                        ].map(([label, count]) => (
+                          <div key={String(label)} className="bg-[#161618] border border-[#2a2a2b] rounded-lg p-3">
+                            <p className="text-[9px] font-mono text-[#7a7a7a] uppercase">{label}</p>
+                            <p className="text-xl font-serif text-[#e5e5e5] mt-1">{count}</p>
                           </div>
-                          {documents.some(d => d.id === "doc-afad-framework") ? (
-                            <CheckCircle className="w-4 h-4 text-[#d4af37] shrink-0" />
-                          ) : (
-                            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                          )}
-                        </div>
-
-                        <div className="bg-[#161618] border border-[#2a2a2b] rounded-lg p-2.5 flex items-center justify-between">
-                          <div>
-                            <p className="text-[10px] font-mono text-[#7a7a7a] uppercase">3. Proactive Hygiene</p>
-                            <p className="text-xs font-semibold text-[#e5e5e5] mt-0.5 truncate">Reset Map v2.0</p>
-                          </div>
-                          {documents.some(d => d.id === "doc-reset-map") ? (
-                            <CheckCircle className="w-4 h-4 text-[#d4af37] shrink-0" />
-                          ) : (
-                            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                          )}
-                        </div>
+                        ))}
                       </div>
                     </div>
 
-                    <div className="shrink-0 flex flex-col items-stretch sm:items-end justify-center">
+                    <div className="shrink-0 flex gap-2">
                       <button
-                        onClick={handleAlignStack}
-                        disabled={isAligningStack}
-                        className={`px-5 py-2.5 rounded-xl text-xs font-semibold tracking-wide border transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
-                          documents.some(d => d.id === "doc-sovereignty-scroll" && d.title.includes("v2.9")) &&
-                          documents.some(d => d.id === "doc-afad-framework") &&
-                          documents.some(d => d.id === "doc-reset-map")
-                            ? "bg-[#161618] border-[#2a2a2b] text-[#7a7a7a] hover:border-[#d4af37]/50 hover:text-[#d4af37]"
-                            : "bg-[#d4af37] border-[#d4af37] text-black hover:bg-white hover:border-white hover:scale-[1.02]"
-                        }`}
+                        onClick={loadCourtLibrary}
+                        disabled={isLoadingCourtLibrary}
+                        className="px-4 py-2.5 rounded-xl text-xs font-semibold border bg-[#161618] border-[#2a2a2b] text-[#b1b1b1] hover:text-[#d4af37] hover:border-[#d4af37]/40 flex items-center gap-2 cursor-pointer disabled:opacity-50"
                       >
-                        {isAligningStack ? (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            Aligning Stack...
-                          </>
-                        ) : documents.some(d => d.id === "doc-sovereignty-scroll" && d.title.includes("v2.9")) &&
-                          documents.some(d => d.id === "doc-afad-framework") &&
-                          documents.some(d => d.id === "doc-reset-map") ? (
-                          <>
-                            <ShieldCheck className="w-3.5 h-3.5 text-[#d4af37]" />
-                            Re-Align Operational Stack
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5" />
-                            Align Operational Stack
-                          </>
-                        )}
+                        <RefreshCw className={`w-3.5 h-3.5 ${isLoadingCourtLibrary ? "animate-spin" : ""}`} />
+                        Refresh
+                      </button>
+                      <button
+                        onClick={() => setActiveTab("library")}
+                        className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-[#d4af37] text-black hover:opacity-90 flex items-center gap-2 cursor-pointer"
+                      >
+                        <Database className="w-3.5 h-3.5" />
+                        Open Library
                       </button>
                     </div>
                   </div>
@@ -2486,7 +2395,94 @@ Scribe Assistant confirmation: The Court operational stack has been successfully
               </div>
             )}
 
-            {/* 2. LORE DOCUMENTS TABS */}
+            {/* 2. COURT LIBRARY */}
+            {activeTab === "library" && (
+              <div className="space-y-5">
+                <div className="bg-[#0f0f10] border border-[#2a2a2b] rounded-2xl p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Database className="w-5 h-5 text-[#d4af37]" />
+                        <h2 className="text-xl font-serif italic text-[#e5e5e5]">Court Library</h2>
+                      </div>
+                      <p className="text-xs text-[#b1b1b1] mt-2">{courtLibraryRule}</p>
+                      <p className="text-[10px] text-[#666] font-mono mt-1">Registry view is read-only. Canon changes still require an authorized source/update path.</p>
+                    </div>
+                    <button
+                      onClick={loadCourtLibrary}
+                      disabled={isLoadingCourtLibrary}
+                      className="px-4 py-2 bg-[#161618] border border-[#2a2a2b] rounded-lg text-xs text-[#b1b1b1] hover:text-[#d4af37] hover:border-[#d4af37]/40 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isLoadingCourtLibrary ? "animate-spin" : ""}`} />
+                      Refresh Registry
+                    </button>
+                  </div>
+                </div>
+
+                {courtLibraryError && (
+                  <div className="bg-red-950/20 border border-red-900/40 text-red-300 rounded-xl p-4 text-xs font-mono">
+                    {courtLibraryError}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {courtLibrary.map((entry) => {
+                    const statusClass =
+                      entry.status === "sealed"
+                        ? "text-[#d4af37] border-[#d4af37]/30 bg-[#d4af37]/5"
+                        : entry.status === "confirmed"
+                        ? "text-emerald-400 border-emerald-900/40 bg-emerald-950/20"
+                        : entry.status === "working"
+                        ? "text-amber-300 border-amber-900/40 bg-amber-950/20"
+                        : "text-[#999] border-[#333] bg-[#161618]";
+
+                    return (
+                      <div key={entry.id} className="bg-[#0f0f10] border border-[#2a2a2b] rounded-xl p-5 hover:border-[#3a3a3c] transition-colors">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              {entry.kind === "core" ? <BookOpen className="w-4 h-4 text-[#d4af37] shrink-0" /> : <ShieldCheck className="w-4 h-4 text-[#999] shrink-0" />}
+                              <h3 className="text-sm font-semibold text-[#e5e5e5] truncate">{entry.title}</h3>
+                            </div>
+                            <p className="text-[10px] text-[#666] font-mono mt-2 break-all">{entry.path}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded-full border text-[9px] font-mono font-bold uppercase shrink-0 ${statusClass}`}>
+                            {entry.status}
+                          </span>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-[#202022] space-y-1.5 text-[11px]">
+                          <div className="flex justify-between gap-4">
+                            <span className="text-[#666]">Class</span>
+                            <span className="text-[#b1b1b1] uppercase font-mono">{entry.kind}</span>
+                          </div>
+                          {entry.authority && (
+                            <div className="flex justify-between gap-4">
+                              <span className="text-[#666]">Authority</span>
+                              <span className="text-[#d4af37]">{entry.authority}</span>
+                            </div>
+                          )}
+                          {entry.review && (
+                            <div className="flex justify-between gap-4">
+                              <span className="text-[#666]">Review</span>
+                              <span className="text-amber-300">{entry.review}</span>
+                            </div>
+                          )}
+                          {typeof entry.bytes === "number" && (
+                            <div className="flex justify-between gap-4">
+                              <span className="text-[#666]">Size</span>
+                              <span className="text-[#999] font-mono">{Math.max(1, Math.round(entry.bytes / 1024))} KB</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 3. LORE DOCUMENTS TABS */}
             {activeTab === "lore" && (
               <div className="flex-1 flex flex-col md:flex-row gap-6 min-h-[400px]">
                 
