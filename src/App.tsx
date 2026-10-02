@@ -377,7 +377,7 @@ export default function App() {
   };
 
   // --- NOTION INTEGRATION STATES & HANDLERS ---
-  const [notionApiKey, setNotionApiKey] = useState<string>(() => localStorage.getItem("scribe_notion_api_key") || "");
+  const [notionApiKey, setNotionApiKey] = useState<string>("");
   const [notionPages, setNotionPages] = useState<any[]>([]);
   const [selectedNotionPageId, setSelectedNotionPageId] = useState<string>("");
   const [isSearchingNotion, setIsSearchingNotion] = useState(false);
@@ -401,10 +401,10 @@ export default function App() {
       .catch((err) => console.error("Error checking Notion status:", err));
   }, []);
 
-  // Save the Notion API key to localStorage whenever it changes
+  // Keep any manually entered Notion key in memory only.
+  // Persistent secrets belong in the platform Secrets panel / server environment.
   const updateNotionApiKey = (key: string) => {
     setNotionApiKey(key);
-    localStorage.setItem("scribe_notion_api_key", key);
   };
 
   const handleSearchNotion = async (customKey?: string) => {
