@@ -1,0 +1,10 @@
+{
+  "artifact": "ScribeOffice_recovery_candidate_v5_20261009.zip",
+  "sha256": "92e0771fd3d498bed219fd946021e814d2ec3823f884e395325c6a29112b92ea",
+  "encoding": "base64",
+  "chunk_count": 22,
+  "chunk_size_chars": 22000,
+  "base64_length": 466100,
+  "raw_bytes": 349573,
+  "part_pattern": "ScribeOffice_v5_payload_part_{NN:02d}_of_22.txt"
+}
