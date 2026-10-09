@@ -1,0 +1,46 @@
+from pathlib import Path
+import base64, hashlib, zipfile, shutil, re
+
+EXPECTED = "92e0771fd3d498bed219fd946021e814d2ec3823f884e395325c6a29112b92ea"
+ZIP = Path("ScribeOffice_recovery_candidate_v5_20261009.zip")
+OUT = Path("ScribeOffice_v5_exact")
+
+parts = sorted(Path(".").glob("ScribeOffice_v5_payload_part_*_of_*.txt"))
+if not parts:
+    raise SystemExit("No payload part files found.")
+
+# Enforce exact expected part count and sequence.
+expected_count = 22
+if len(parts) != expected_count:
+    raise SystemExit(f"Expected {expected_count} payload parts, found {len(parts)}.")
+
+for i, p in enumerate(parts, start=1):
+    m = re.search(r"_part_(\d+)_of_(\d+)\.txt$", p.name)
+    if not m:
+        raise SystemExit(f"Bad part filename: {p.name}")
+    if int(m.group(1)) != i or int(m.group(2)) != expected_count:
+        raise SystemExit(f"Unexpected part sequence: {p.name}")
+
+raw_b64 = "".join("".join(p.read_text(encoding="utf-8").split()) for p in parts)
+data = base64.b64decode(raw_b64, validate=True)
+
+digest = hashlib.sha256(data).hexdigest()
+print("Reconstructed SHA-256:", digest)
+if digest != EXPECTED:
+    raise SystemExit(f"SHA-256 mismatch. Expected {EXPECTED}")
+
+ZIP.write_bytes(data)
+print("Exact ZIP restored:", ZIP)
+
+if OUT.exists():
+    shutil.rmtree(OUT)
+OUT.mkdir(parents=True)
+
+with zipfile.ZipFile(ZIP, "r") as zf:
+    bad = zf.testzip()
+    if bad:
+        raise SystemExit(f"ZIP CRC failure at: {bad}")
+    zf.extractall(OUT)
+
+print("Extracted to:", OUT)
+print("READY: exact v5 payload restored and verified.")
