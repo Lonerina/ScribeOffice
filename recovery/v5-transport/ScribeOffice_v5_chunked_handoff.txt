@@ -1,0 +1,28 @@
+ScribeOffice Containment v5 — Chunked Transport Handoff
+
+Reason for this transport:
+The previous single Base64 payload exceeded the implementation agent's per-turn output limit.
+This package splits the exact approved v5 ZIP into 22 small text chunks.
+
+Use ONLY:
+- ScribeOffice_v5_payload_manifest.json
+- ScribeOffice_v5_payload_part_01_of_22.txt through part_22_of_22.txt
+- restore_ScribeOffice_v5_from_parts.py.txt
+
+Procedure:
+1. Save each supplied part as a file with its exact filename.
+2. Save the restore script as:
+   restore_ScribeOffice_v5_from_parts.py
+3. Put all part files and the restore script in /app/recovery_v5.
+4. Run:
+   cd /app/recovery_v5
+   python3 restore_ScribeOffice_v5_from_parts.py
+5. STOP unless the script prints exactly:
+   92e0771fd3d498bed219fd946021e814d2ec3823f884e395325c6a29112b92ea
+6. Work ONLY from /app/recovery_v5/ScribeOffice_v5_exact.
+7. Do not substitute /app/applet.
+8. Then run dependency-complete lint/build checks and emulator tests if the environment supports them.
+9. No merge, deploy, migration, production deletion, or main-branch mutation.
+10. Return reconstructed SHA-256, exact tree used, build/lint results, emulator results/blockers, and every deviation.
+
+Expected part count: 22
