@@ -668,3 +668,9 @@ jobs:
           fi
           test -f "$target_dir/src/App.tsx"
           echo "PASS implementation committed to isolated branch"
+
+      - name: Check Google AI Studio import readiness without credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 recovery/v5-transport/check-ai-studio-import-readiness.py implementation/ScribeOffice_v5
