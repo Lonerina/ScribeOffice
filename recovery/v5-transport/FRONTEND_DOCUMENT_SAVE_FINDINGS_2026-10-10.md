@@ -30,3 +30,10 @@ Scope: Reconstructed approved v5 application, source unchanged
 5. Add a failing-then-passing regression test before modifying the application; no production changes or weakening Firestore rules.
 
 No production source mutation, merge or deployment.
+
+## Supplemental regression result — 2026-10-10
+- Run https://github.com/Lonerina/ScribeOffice/actions/runs/38037101153 **PASSED**.
+- Firestore emulator rejected client attempt to mutate an existing manual record's immutable provenance to generated_draft.
+- It rejected client update of server-generated provenance and client creation of forged generated provenance.
+- Reviewed generated-document route in reconstructed server.ts lines 1833–1875: requires authenticated principal, Court ACL, owned world, valid ID/title/content, duplicate check, and writes generated_draft server-side.
+- Positive authenticated HTTP integration of this server route remains **UNVERIFIED**. These regression tests demonstrate denial boundaries only.
