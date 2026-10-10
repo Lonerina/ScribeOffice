@@ -435,3 +435,18 @@ jobs:
           nl -ba src/App.tsx | sed -n '1820,1990p'
           echo '=== DOCUMENT RULES ==='
           nl -ba firestore.rules | sed -n '175,223p'
+
+      - name: Inspect generated-document server route
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('server.ts').read_text().splitlines()
+          for i,line in enumerate(s):
+              if '/api/records/generated-document' in line:
+                  print('=== ROUTE from line',i+1,'===')
+                  for n in range(max(0,i-8),min(len(s),i+125)):
+                      print(f'{n+1}: {s[n]}')
+          PY
