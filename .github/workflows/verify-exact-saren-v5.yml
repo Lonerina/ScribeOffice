@@ -281,3 +281,58 @@ jobs:
           })().catch(e=>{console.error(e);process.exitCode=1});
           JS
           npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-saren-integration --config firebase.json 'node /tmp/saren-hmac-integration-test.cjs'
+
+      - name: Authenticated persistence and recall (isolated emulators)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          python3 - <<'PY'
+          import json
+          p=json.load(open('firebase.json'))
+          p.setdefault('emulators',{})['auth']={'host':'127.0.0.1','port':9099}
+          open('/tmp/saren-auth-emulators.json','w').write(json.dumps(p))
+          PY
+          cat > /tmp/saren-auth-persist.cjs <<'JS'
+          const fs=require('fs'),ts=require(process.cwd()+'/node_modules/typescript'),vm=require('vm'),crypto=require('crypto'),assert=require('assert').strict;
+          const text=fs.readFileSync('server.ts','utf8'),sf=ts.createSourceFile('server.ts',text,ts.ScriptTarget.Latest,true);
+          const names=['requireSarenRuntimeSigningKey','signSarenRuntimeRecord','persistSarenHandoff','loadPersistedSarenHandoff'];
+          const nodes=sf.statements.filter(n=>ts.isFunctionDeclaration(n)&&names.includes(n.name?.text));
+          assert.equal(nodes.length,4,'real v5 server functions present');
+          const js=ts.transpileModule(nodes.map(n=>n.getText(sf)).join('\n')+'\nglobalThis.api={persistSarenHandoff,loadPersistedSarenHandoff};',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+          const project='demo-saren-auth-persist',world='integration_world',key='ci-only-auth-test-signing-key-012345678901';
+          const authBase='http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1';
+          async function auth(endpoint,data){const r=await fetch(authBase+endpoint+'?key=test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});assert.ok(r.ok,'auth '+r.status+': '+await r.text());return r.json();}
+          async function write(url,data,token){const r=await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(data)});assert.ok(r.ok,'world setup '+r.status+': '+await r.text());}
+          (async()=>{
+            const u=await auth('/accounts:signUp',{email:'owner@example.test',password:'password-for-ci-12345',returnSecureToken:true});
+            const uid=u.localId,token=u.idToken;
+            await auth('/accounts:update',{idToken:token,emailVerified:true});
+            const login=await auth('/accounts:signInWithPassword',{email:'owner@example.test',password:'password-for-ci-12345',returnSecureToken:true});
+            const ownerToken=login.idToken;
+            const env={SAREN_RUNTIME_SIGNING_KEY:key,FIRESTORE_EMULATOR_HOST:'127.0.0.1:8085'};
+            const config={projectId:project,firestoreDatabaseId:'(default)',apiKey:'test'};
+            const sandbox={crypto,console,process:{env},fetch,readJsonFile:async()=>config,isValidId:x=>/^[a-zA-Z0-9_-]{1,128}$/.test(x),isValidSarenHandoff:x=>x?.schemaVersion==='saren-handoff-v3'};
+            vm.runInNewContext(js,sandbox);
+            const {persistSarenHandoff:persist,loadPersistedSarenHandoff:load}=sandbox.api;
+            const url='http://127.0.0.1:8085/v1/projects/'+project+'/databases/(default)/documents/worlds/'+world;
+            const fields={worldName:{stringValue:'Isolated test world'},genre:{stringValue:'test'},description:{stringValue:'test'},highConcept:{stringValue:'test'},ownerId:{stringValue:uid},createdAt:{stringValue:new Date().toISOString()}};
+            await write(url,{fields},ownerToken);
+            const handoff={schemaVersion:'saren-handoff-v3',sessionId:'isolated-auth-test',trackingScope:'server_observed_only'};
+            const first=await persist(handoff,world,uid,ownerToken);
+            assert.equal(first.persisted,true,'revision 1: '+JSON.stringify(first));
+            assert.equal(first.revision,1);
+            const restored=await load(world,uid,ownerToken);
+            assert.equal(restored.status,'restored','recall: '+JSON.stringify({status:restored.status,error:restored.error}));
+            const second=await persist(handoff,world,uid,ownerToken);
+            assert.equal(second.persisted,true,'revision 2: '+JSON.stringify(second));
+            assert.equal(second.revision,2);
+            const again=await load(world,uid,ownerToken);
+            assert.equal(again.status,'restored');
+            const stranger=await auth('/accounts:signUp',{email:'attacker@example.test',password:'password-for-ci-12345',returnSecureToken:true});
+            const unauthorized=await load(world,stranger.localId,stranger.idToken);
+            assert.notEqual(unauthorized.status,'restored','cross-user recall denied');
+            console.log('PASS authenticated persistence revisions 1 and 2, signed recall, wrong-owner isolation');
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          JS
+          npx --yes firebase-tools@14 emulators:exec --only auth,firestore --project demo-saren-auth-persist --config /tmp/saren-auth-emulators.json 'node /tmp/saren-auth-persist.cjs'
