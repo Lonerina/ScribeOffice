@@ -450,3 +450,38 @@ jobs:
                   for n in range(max(0,i-8),min(len(s),i+125)):
                       print(f'{n+1}: {s[n]}')
           PY
+
+      - name: Assert generated-document and provenance mutation guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          cat > /tmp/saren-generated-regression.cjs <<'JS'
+          const {initializeTestEnvironment,assertFails}=require(process.cwd()+'/node_modules/@firebase/rules-unit-testing');
+          const {doc,setDoc,updateDoc}=require(process.cwd()+'/node_modules/firebase/firestore');
+          const fs=require('fs'),assert=require('assert').strict;
+          (async()=>{
+            const env=await initializeTestEnvironment({projectId:'demo-generated-regression',firestore:{rules:fs.readFileSync('firestore.rules','utf8'),host:'127.0.0.1',port:8085}});
+            try {
+              const uid='owner_test',world='world_test';
+              const now=new Date().toISOString();
+              const userRecord={title:'Manual record',category:'Other',content:'Original',version:1,ownerId:uid,createdAt:now,updatedAt:now,provenance:{origin:'user',evidenceStatus:'user_record',note:'Manual'}};
+              const generatedRecord={...userRecord,title:'Generated draft',provenance:{origin:'generated',evidenceStatus:'generated_draft',note:'Server fixed'}};
+              await env.withSecurityRulesDisabled(async ctx=>{
+                const db=ctx.firestore();
+                await setDoc(doc(db,'worlds',world),{worldName:'Test',genre:'Other',description:'Test',highConcept:'Test',ownerId:uid,createdAt:now});
+                await setDoc(doc(db,'worlds',world,'documents','manual'),userRecord);
+                await setDoc(doc(db,'worlds',world,'documents','generated'),generatedRecord);
+              });
+              const db=env.authenticatedContext(uid,{email_verified:true}).firestore();
+              await assertFails(updateDoc(doc(db,'worlds',world,'documents','manual'),{content:'AI rewrite',provenance:{origin:'generated',evidenceStatus:'generated_draft',note:'Changed'}}));
+              console.log('PASS client cannot mutate manual document provenance');
+              await assertFails(updateDoc(doc(db,'worlds',world,'documents','generated'),{content:'Client rewrite'}));
+              console.log('PASS generated server record cannot be edited from client');
+              await assertFails(setDoc(doc(db,'worlds',world,'documents','fake_generated'),generatedRecord));
+              console.log('PASS client cannot forge generated document');
+              console.log('GENERATED DOCUMENT PROVENANCE GUARDS PASSED');
+            }finally{await env.cleanup()}
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          JS
+          npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-generated-regression --config firebase.json 'node /tmp/saren-generated-regression.cjs'
