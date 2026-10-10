@@ -7,7 +7,7 @@ on:
       - saren-v5-document-update-candidate-20261010
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-v5:
@@ -648,3 +648,23 @@ jobs:
           name: saren-v5-document-update-candidate
           path: ${{ runner.temp }}/SarenOffice_v5_document_update_CANDIDATE.zip
           retention-days: 30
+
+      - name: Commit implemented v5 application to isolated branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir="$RUNNER_TEMP/saren-v5-document-candidate"
+          target_dir="implementation/ScribeOffice_v5"
+          mkdir -p "$target_dir"
+          cp -a "$source_dir/." "$target_dir/"
+          git add "$target_dir"
+          if git diff --cached --quiet; then
+            echo "Implementation already up to date"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "implementation: publish verified Saren v5 document-update fix"
+            git push origin HEAD:saren-v5-document-update-candidate-20261010
+          fi
+          test -f "$target_dir/src/App.tsx"
+          echo "PASS implementation committed to isolated branch"
