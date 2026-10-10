@@ -337,6 +337,15 @@ jobs:
           JS
           npx --yes firebase-tools@14 emulators:exec --only auth,firestore --project demo-saren-auth-persist --config /tmp/saren-auth-emulators.json 'node /tmp/saren-auth-persist.cjs'
 
+      - name: Inspect Notion route access guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          sed -n '1,45p' server.ts
+          sed -n '1160,1290p' server.ts
+          grep -n -E '401|unauthorized|Unauthorized|auth|API_KEY|middleware' server.ts | tail -70 || true
+
       - name: Mock external tool integrations and document creation endpoints
         shell: bash
         run: |
