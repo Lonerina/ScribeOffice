@@ -37,3 +37,11 @@ No production source mutation, merge or deployment.
 - It rejected client update of server-generated provenance and client creation of forged generated provenance.
 - Reviewed generated-document route in reconstructed server.ts lines 1833–1875: requires authenticated principal, Court ACL, owned world, valid ID/title/content, duplicate check, and writes generated_draft server-side.
 - Positive authenticated HTTP integration of this server route remains **UNVERIFIED**. These regression tests demonstrate denial boundaries only.
+
+## Verified safe review path — 2026-10-10
+- GitHub CI https://github.com/Lonerina/ScribeOffice/actions/runs/38039176054 passed (commit ae7d7891).
+- In Firestore emulator, attempted client AI rewrite with provenance mutation was correctly denied, and original content remained unchanged.
+- Separate generated draft remained intact and unpromoted.
+- Authenticated owner's explicitly reviewed ordinary revision saved with version increment while original user provenance and createdAt remained unchanged.
+- This is a controlled data-path proof, **not** a verified change to `handleCommitUpdate` in recovered v5. The current frontend AI-commit implementation still writes generated provenance and remains incompatible with immutable provenance policy.
+- Remediation must preserve distinction between AI proposal and human-reviewed edit, and must not silently classify an AI-origin edit as user-authored evidence. Explicit review and audit semantics remain necessary.
