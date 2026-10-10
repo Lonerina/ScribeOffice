@@ -492,6 +492,7 @@ jobs:
           set -euo pipefail
           cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
           node <<'JS'
+          (async()=>{
           const fs=require('fs'),ts=require('typescript'),vm=require('vm'),assert=require('assert').strict;
           const code=fs.readFileSync('server.ts','utf8');
           const ast=ts.createSourceFile('server.ts',code,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
@@ -543,4 +544,5 @@ jobs:
           assert.equal(safe.category,'Other');
           console.log('PASS caller cannot mint verified provenance; category allowlist applied');
           console.log('GENERATED-DOCUMENT ROUTE ISOLATED HANDLER TEST PASSED');
+          })().catch(e=>{console.error(e);process.exitCode=1});
           JS
