@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - saren-v5-linux-verify-20261010
+      - saren-v5-document-update-candidate-20261010
 
 permissions:
   contents: read
