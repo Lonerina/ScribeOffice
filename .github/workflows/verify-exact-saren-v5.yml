@@ -95,3 +95,23 @@ jobs:
               raise SystemExit(1)
           print("ARCHIVE SHA-256:", hashlib.sha256(archive.read_bytes()).hexdigest())
           PY
+
+      - name: Inspect Firestore test entrypoints (read only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          echo "=== Available test files ==="
+          find . -maxdepth 2 -type f \( -iname '*firestore*' -o -iname '*rule*' -o -iname '*lifecycle*' -o -name 'firebase.json' \) -not -path './node_modules/*' | sort | head -80
+          echo "=== package scripts ==="
+          node -e 'console.log(JSON.stringify(require("./package.json").scripts,null,2))'
+          for f in test-rules-emulator.mjs verify-saren-lifecycle.mjs; do
+            if [ -f "$f" ]; then
+              echo "=== $f (first 100 lines) ==="
+              sed -n '1,100p' "$f"
+            fi
+          done
+          if [ -f firebase.json ]; then
+            echo "=== firebase.json ==="
+            cat firebase.json
+          fi
