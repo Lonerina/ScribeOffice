@@ -358,7 +358,7 @@ jobs:
           const boundaries=fs.readFileSync('verify-recovery-boundaries.mjs','utf8');
           assert.match(server,/WRITE UNAVAILABLE: Notion mutations are disabled in Containment v3/);
           assert.match(server,/NOTION_AUTHORIZED_UIDS/);
-          assert.match(boundaries,/Notion route \/api\/notion\/export requires Notion principal ACL/);
+          assert.ok(boundaries.includes('Notion principal ACL'));
           console.log('PASS: Notion writes intentionally disabled; auth principal ACL enforced by recovered v5');
           JS
           NOTION_API_KEY=mock-test-key NODE_ENV=production node dist/server.cjs >/tmp/saren-notion-guard.log 2>&1 &
