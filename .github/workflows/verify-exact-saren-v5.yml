@@ -373,3 +373,34 @@ jobs:
           code=$(curl --silent --output /tmp/saren-export-probe.json --write-out '%{http_code}' -X POST http://127.0.0.1:3000/api/notion/export -H 'content-type: application/json' -d '{"parentPageId":"mock-parent","title":"Unauthorized Probe","content":"none"}')
           test "$code" = 401
           echo "PASS Notion unauthenticated status and export denied HTTP 401; no external call or document created"
+
+      - name: Verify workspace document creation boundaries in Firestore
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          cat > /tmp/saren-document-create-test.cjs <<'JS'
+          const {initializeTestEnvironment,assertFails,assertSucceeds}=require(process.cwd()+'/node_modules/@firebase/rules-unit-testing');
+          const {doc,setDoc,getDoc,updateDoc}=require(process.cwd()+'/node_modules/firebase/firestore');
+          const fs=require('fs'),assert=require('assert').strict;
+          (async()=>{
+            const env=await initializeTestEnvironment({projectId:'demo-saren-doc-create',firestore:{rules:fs.readFileSync('firestore.rules','utf8'),host:'127.0.0.1',port:8085}});
+            try {
+              const owner='doc_owner',world='doc_world';
+              await env.withSecurityRulesDisabled(async ctx=>{
+                await setDoc(doc(ctx.firestore(),'worlds',world),{worldName:'Document Test',genre:'test',description:'test',highConcept:'test',ownerId:owner,createdAt:new Date().toISOString()});
+              });
+              const db=env.authenticatedContext(owner,{email_verified:true}).firestore();
+              const other=env.authenticatedContext('other_owner',{email_verified:true}).firestore();
+              const reference=doc(db,'worlds',world,'documents','draft_test_1');
+              const base={title:'Isolated Test Draft',category:'Other',content:'# Test\nDraft body',version:1,tags:[],ownerId:owner,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),provenance:{origin:'user',evidenceStatus:'user_record',note:'test fixture'}};
+              await assertSucceeds(setDoc(reference,base)); console.log('PASS user authored workspace document created');
+              assert.equal((await getDoc(reference)).data().title,base.title);console.log('PASS user document readback');
+              await assertFails(setDoc(doc(other,'worlds',world,'documents','foreign_draft'),{...base,ownerId:'other_owner'}));console.log('PASS cross-owner document creation denied');
+              await assertFails(getDoc(doc(other,'worlds',world,'documents','draft_test_1')));console.log('PASS cross-owner document read denied');
+              await assertFails(setDoc(doc(db,'worlds',world,'documents','generated_draft'),{...base,provenance:{origin:'generated',evidenceStatus:'generated_draft',note:'generated content'}}));console.log('PASS generated draft client-forged provenance denied');
+              console.log('WORKSPACE DOCUMENT CREATION MATRIX PASSED');
+            }finally{await env.cleanup()}
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          JS
+          npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-saren-doc-create --config firebase.json 'node /tmp/saren-document-create-test.cjs'
