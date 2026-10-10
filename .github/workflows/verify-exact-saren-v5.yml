@@ -485,3 +485,62 @@ jobs:
           })().catch(e=>{console.error(e);process.exitCode=1});
           JS
           npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-generated-regression --config firebase.json 'node /tmp/saren-generated-regression.cjs'
+
+      - name: Exercise genuine generated-document route with isolated dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          node <<'JS'
+          const fs=require('fs'),ts=require('typescript'),vm=require('vm'),assert=require('assert').strict;
+          const code=fs.readFileSync('server.ts','utf8');
+          const ast=ts.createSourceFile('server.ts',code,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
+          const route=ast.statements.find(n=>ts.isExpressionStatement(n)&&n.expression?.expression?.getText(ast)==='app.post'&&n.expression?.arguments?.[0]?.text==='/api/records/generated-document');
+          assert.ok(route,'generated route must exist in exact recovered server');
+          const snippet=ts.transpileModule(route.getText(ast),{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+          const store=new Map(),routes=new Map();
+          let user={uid:'owner_01'},court=true,owned=true;
+          const sandbox={
+            app:{post:(path,handler)=>routes.set(path,handler)},
+            requireFirebaseUser:async()=>user,
+            requireCourtPrincipal:async()=>court,
+            requireOwnedWorld:async()=>owned,
+            isValidId:id=>/^[a-zA-Z0-9_-]+$/.test(id),
+            getAdminDb:async()=>({doc:(path)=>({
+              get:async()=>({exists:store.has(path)}),
+              create:async(payload)=>{assert.ok(!store.has(path));store.set(path,payload)}
+            })})
+          };
+          vm.runInNewContext(snippet,sandbox);
+          const handler=routes.get('/api/records/generated-document');assert.equal(typeof handler,'function');
+          async function invoke(body){
+            let status=200,data=null;
+            const res={status(n){status=n;return this},json(obj){data=obj;return this}};
+            await handler({body},res);
+            return {status,data};
+          }
+          const base={worldId:'world_01',docId:'draft_01',sourceKind:'generated',record:{title:'Saren Draft',content:'# Content',category:'Other'}};
+          let out=await invoke(base);
+          assert.equal(out.status,201,JSON.stringify(out));
+          assert.equal(out.data.saved,true);
+          const saved=store.get('worlds/world_01/documents/draft_01');
+          assert.equal(saved.ownerId,'owner_01');
+          assert.equal(saved.provenance.origin,'generated');
+          assert.equal(saved.provenance.evidenceStatus,'generated_draft');
+          console.log('PASS generated route creates draft with server-assigned provenance');
+          out=await invoke(base);assert.equal(out.status,409);console.log('PASS duplicate generated ID rejected');
+          user=null;out=await invoke({...base,docId:'draft_02'});assert.equal(store.size,1);console.log('PASS missing identity cannot create');
+          user={uid:'owner_01'};court=false;await invoke({...base,docId:'draft_03'});assert.equal(store.size,1);console.log('PASS Court principal rejection blocks writes');
+          court=true;owned=false;await invoke({...base,docId:'draft_04'});assert.equal(store.size,1);console.log('PASS wrong-world access blocks writes');
+          owned=true;out=await invoke({...base,docId:'bad/id'});assert.equal(out.status,400);
+          out=await invoke({...base,docId:'draft_05',record:{title:'',content:'bad'}});assert.equal(out.status,400);
+          console.log('PASS invalid document identifiers and empty titles rejected');
+          out=await invoke({...base,docId:'draft_06',sourceKind:'untrusted',record:{title:'Imported?',content:'safe',category:'unexpected',provenance:{origin:'user',evidenceStatus:'verified'}}});
+          assert.equal(out.status,201);
+          const safe=store.get('worlds/world_01/documents/draft_06');
+          assert.equal(safe.provenance.origin,'generated');
+          assert.equal(safe.provenance.evidenceStatus,'generated_draft');
+          assert.equal(safe.category,'Other');
+          console.log('PASS caller cannot mint verified provenance; category allowlist applied');
+          console.log('GENERATED-DOCUMENT ROUTE ISOLATED HANDLER TEST PASSED');
+          JS
