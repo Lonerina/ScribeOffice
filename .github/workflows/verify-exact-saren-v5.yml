@@ -546,3 +546,46 @@ jobs:
           console.log('GENERATED-DOCUMENT ROUTE ISOLATED HANDLER TEST PASSED');
           })().catch(e=>{console.error(e);process.exitCode=1});
           JS
+
+      - name: Verify safe AI revision workflow without provenance rewrite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          cat > /tmp/saren-safe-revision.cjs <<'JS'
+          const {initializeTestEnvironment,assertFails,assertSucceeds}=require(process.cwd()+'/node_modules/@firebase/rules-unit-testing');
+          const {doc,setDoc,getDoc,updateDoc}=require(process.cwd()+'/node_modules/firebase/firestore');
+          const fs=require('fs'),assert=require('assert').strict;
+          (async()=>{
+            const env=await initializeTestEnvironment({projectId:'demo-saren-safe-revision',firestore:{rules:fs.readFileSync('firestore.rules','utf8'),host:'127.0.0.1',port:8085}});
+            try{
+              const uid='revision_owner',world='revision_world',now=new Date().toISOString();
+              const original={title:'User source',category:'Other',content:'Original',tags:[],relatedCharacterIds:[],version:1,versionHistory:[{version:1,content:'Original',updateNote:'Initial creation.',updatedAt:now}],ownerId:uid,createdAt:now,updatedAt:now,provenance:{origin:'user',evidenceStatus:'user_record',note:'User-authored workspace record; not automatically verified evidence.'}};
+              const generated={...original,title:'AI proposal',content:'Proposed rewrite',provenance:{origin:'generated',evidenceStatus:'generated_draft',note:'Server-fixed generated provenance.'}};
+              await env.withSecurityRulesDisabled(async ctx=>{
+                await setDoc(doc(ctx.firestore(),'worlds',world),{worldName:'Test',ownerId:uid,createdAt:now,genre:'Other',description:'Test',highConcept:'Test'});
+                await setDoc(doc(ctx.firestore(),'worlds',world,'documents','source'),original);
+                await setDoc(doc(ctx.firestore(),'worlds',world,'documents','proposal'),generated);
+              });
+              const db=env.authenticatedContext(uid,{email_verified:true}).firestore();
+              const source=doc(db,'worlds',world,'documents','source');
+              await assertFails(updateDoc(source,{content:'AI rewrite',version:2,provenance:generated.provenance}));
+              assert.equal((await getDoc(source)).data().content,'Original');
+              console.log('PASS unsafe AI commit rejected and source remains unchanged');
+              const proposal=await getDoc(doc(db,'worlds',world,'documents','proposal'));
+              assert.equal(proposal.data().provenance.evidenceStatus,'generated_draft');
+              assert.equal((await getDoc(source)).data().content,'Original');
+              console.log('PASS separate AI proposal remains draft without source promotion');
+              const safe={content:'Reviewed revised text',version:2,versionHistory:[{version:2,content:'Reviewed revised text',updateNote:'User-reviewed revision',updatedAt:now},...original.versionHistory],updatedAt:new Date().toISOString()};
+              await assertSucceeds(updateDoc(source,safe));
+              const updated=(await getDoc(source)).data();
+              assert.equal(updated.version,2);
+              assert.equal(updated.provenance.origin,'user');
+              assert.equal(updated.provenance.evidenceStatus,'user_record');
+              assert.equal(updated.createdAt,now);
+              console.log('PASS authorized reviewed user revision saved without provenance mutation');
+              console.log('SAFE AI REVISION CONTROL MATRIX PASSED');
+            }finally{await env.cleanup()}
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          JS
+          npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-saren-safe-revision --config firebase.json 'node /tmp/saren-safe-revision.cjs'
