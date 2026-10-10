@@ -174,3 +174,10 @@ jobs:
               print(f"{pattern}: count={len(hits)} lines={hits[:35]}")
           print("integration files:",[str(p) for p in Path(".").glob("*test*.mjs") if "node_modules" not in str(p)])
           PY
+
+      - name: Inspect signed runtime server handlers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          sed -n '335,565p' server.ts
