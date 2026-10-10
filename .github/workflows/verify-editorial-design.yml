@@ -1,0 +1,40 @@
+name: Saren editorial preview validation
+on:
+  push:
+    branches:
+      - design/saren-office-editorial-redesign-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: implementation/ScribeOffice_v5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: implementation/ScribeOffice_v5/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run build
+      - name: Confirm visual-only change set
+        working-directory: .
+        run: |
+          git fetch origin saren-v5-document-update-candidate-20261010 --depth=1
+          python3 - <<'PY'
+          import subprocess,sys
+          files=subprocess.check_output(["git","diff","--name-only","FETCH_HEAD","HEAD"],text=True).splitlines()
+          allowed={"implementation/ScribeOffice_v5/src/App.tsx","implementation/ScribeOffice_v5/src/editorial.css",".github/workflows/verify-editorial-design.yml"}
+          extra=set(files)-allowed
+          if extra: print("Unexpected changes:",sorted(extra));sys.exit(1)
+          original=subprocess.check_output(["git","show","FETCH_HEAD:implementation/ScribeOffice_v5/src/App.tsx"],text=True)
+          current=open("implementation/ScribeOffice_v5/src/App.tsx").read()
+          expected='import "./editorial.css";\n'+original.replace('className="min-h-screen lg:h-screen lg:max-h-screen bg-[#0c0c0d] flex flex-col font-sans','className="saren-editorial min-h-screen lg:h-screen lg:max-h-screen bg-[#0c0c0d] flex flex-col font-sans',1)
+          if current!=expected: print("Unexpected App.tsx behavior diff");sys.exit(1)
+          print("PASS: app handlers unchanged; style-only App.tsx edit")
+          PY
