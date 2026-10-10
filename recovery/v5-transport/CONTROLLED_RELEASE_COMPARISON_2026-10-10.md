@@ -39,3 +39,8 @@ Decision: **HOLD MERGE / HOLD DEPLOY** pending target reconciliation and live co
 
 ## Final gate
 **Ready for migration planning, NOT ready for unreviewed merge/deployment.**
+
+## Deployment discovery notes
+- Current `main` `.env.example` describes Google AI Studio-managed secrets and APP_URL as a Cloud Run service URL. This is a configuration hint, **not proof** of the actual deployment target or permissions.
+- `main` does not expose `.github/workflows/verify.yml` or `firebase.json` at the checked paths. No evidence of a production deploy workflow was verified here.
+- Do not assume GitHub merging triggers a Cloud Run deployment, or that GitHub has Cloud Run credentials.
