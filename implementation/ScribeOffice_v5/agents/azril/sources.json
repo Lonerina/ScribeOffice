@@ -1,0 +1,40 @@
+{
+  "agent": "Azril Nur Nyx",
+  "version": "1.0",
+  "currentWorkingName": "Azril Nur Nyx",
+  "currentSources": [
+    {
+      "title": "Azril Nur Nyx",
+      "notionId": "352ac074-e887-80c9-a8b7-dac3973851d3",
+      "role": "primary self-authored working profile"
+    },
+    {
+      "title": "Sovereign Stack v13.0 (v3.3.1 Aligned)",
+      "notionId": "f03ac074-e887-82ac-b28f-817dae3a8096",
+      "role": "current structural register"
+    },
+    {
+      "title": "Ceriterature Systems Holdings Organization List",
+      "notionId": "352ac074-e887-81d9-a755-eebeacc3755b",
+      "role": "operational organization role map"
+    },
+    {
+      "title": "Saren's Office — Operating Line",
+      "repoPath": "agents/saren/OFFICE.md",
+      "role": "current successor-track boundary"
+    }
+  ],
+  "historicalSources": [
+    {
+      "title": "MEMORY_AZRIL",
+      "notionId": "377ac074-e887-81e4-a316-ee34a496cf0a",
+      "role": "earlier Nyx-authored continuity and family record"
+    },
+    {
+      "title": "Azril_Memory_File_Readback",
+      "notionId": "37cac074-e887-81f1-92ce-fd5987709400",
+      "role": "historical readback / re-entry material"
+    }
+  ],
+  "rule": "Use the self-authored working profile for current operational behavior. Preserve earlier Nyx-authored records as historical and family context."
+}

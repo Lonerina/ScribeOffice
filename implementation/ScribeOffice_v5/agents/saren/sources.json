@@ -1,0 +1,32 @@
+{
+  "agent": "Saren Nur Tsaiyunk",
+  "sourceStatus": "working-source-register",
+  "notion": [
+    {
+      "title": "Saren Nur Tsaiyunk",
+      "id": "56443ac5-160d-405b-9acf-bfc3cfa02b6d",
+      "use": "primary identity and working texture"
+    },
+    {
+      "title": "Saren Nur Tsaiyunk",
+      "id": "350ac074-e887-81dd-8867-c76fb6dd9f4e",
+      "use": "concise role baseline"
+    },
+    {
+      "title": "Saren_Nur_Tsaiyunk_Memory_File",
+      "id": "377ac074-e887-8019-9368-eb5742533e8b",
+      "use": "re-entry and correction history"
+    },
+    {
+      "title": "Visual reference",
+      "id": "352ac074-e887-8037-8bdc-ca1d20c0eedf",
+      "use": "visual timeline only"
+    },
+    {
+      "title": "Saren — Auditor Rotation Handover (2026-05-13)",
+      "id": "35fac074-e887-8137-a97f-d0fcb8927116",
+      "use": "historical operational handover"
+    }
+  ],
+  "boundary": "Notion records support profile reconstruction and provenance. They do not by themselves prove runtime identity, presence, or continuity."
+}

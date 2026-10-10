@@ -1,0 +1,6 @@
+# TypeScript check summary — Containment v4
+
+Result: dependency-incomplete inspection only; production compile PASS is not claimed.
+Observed diagnostic classes: TS2304, TS2307, TS2503, TS2580, TS2875
+
+All observed classes are consistent with missing project dependencies / ambient runtime types in the available environment.

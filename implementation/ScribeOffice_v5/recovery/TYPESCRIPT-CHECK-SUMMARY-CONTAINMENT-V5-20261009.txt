@@ -1,0 +1,4 @@
+Containment v5 TypeScript inspection
+Result: dependency-incomplete; no production compile PASS claimed.
+Observed diagnostic codes: TS2304, TS2307, TS2503, TS2580, TS2875
+The available working tree has no installed node_modules; missing-module/environment diagnostics remain open.

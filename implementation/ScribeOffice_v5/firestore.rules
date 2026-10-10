@@ -1,0 +1,251 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Test collection for startup connection checks
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // --- REUSABLE SECURITY PRIMITIVES ---
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isVerifiedUser() {
+      return isSignedIn()
+        && request.auth.token.email_verified == true;
+    }
+
+    function ownsWorld(worldId) {
+      return isSignedIn()
+        && isValidId(worldId)
+        && exists(/databases/$(database)/documents/worlds/$(worldId))
+        && get(/databases/$(database)/documents/worlds/$(worldId)).data.ownerId == request.auth.uid;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidProvenance(data) {
+      return data is map
+        && data.keys().hasAll(['origin', 'evidenceStatus'])
+        && data.origin is string
+        && data.origin in ['user', 'generated', 'imported_chat', 'legacy', 'system']
+        && data.evidenceStatus is string
+        && data.evidenceStatus in ['verified_source', 'user_record', 'generated_draft', 'simulation', 'legacy_unverified', 'quarantined']
+        && (!data.keys().hasAll(['sourceRefs']) || (data.sourceRefs is list && data.sourceRefs.size() <= 50))
+        && (!data.keys().hasAll(['note']) || (data.note is string && data.note.size() <= 2000));
+    }
+
+    function isClientUserRecordProvenance(data) {
+      return isValidProvenance(data)
+        && data.origin == 'user'
+        && data.evidenceStatus == 'user_record';
+    }
+
+    function provenanceUnchanged() {
+      return (existing().keys().hasAll(['provenance'])
+          && incoming().keys().hasAll(['provenance'])
+          && incoming().provenance == existing().provenance)
+        || (!existing().keys().hasAll(['provenance'])
+          && !incoming().keys().hasAll(['provenance']));
+    }
+
+    // Recovery containment: client mutation authority exists only for records
+    // that are already client-owned user_record provenance. Trusted/generated/
+    // imported/legacy/system records are server-only for update/delete.
+    function existingIsClientUserRecord() {
+      return existing().keys().hasAll(['provenance'])
+        && isClientUserRecordProvenance(existing().provenance);
+    }
+
+    // --- VALIDATION BLUEPRINTS ---
+    
+    function isValidWorld(data) {
+      return data.worldName is string && data.worldName.size() <= 200
+        && data.genre is string && data.genre.size() <= 200
+        && data.description is string && data.description.size() <= 10000
+        && data.highConcept is string && data.highConcept.size() <= 10000
+        && data.ownerId == request.auth.uid;
+    }
+
+    function isValidCharacter(data) {
+      return data.name is string && data.name.size() <= 200
+        && data.role is string && data.role.size() <= 1000
+        && data.faction is string && data.faction.size() <= 1000
+        && data.bio is string && data.bio.size() <= 25000
+        && data.traits is list && data.traits.size() <= 100
+        && (!data.keys().hasAll(['appearance']) || (data.appearance is string && data.appearance.size() <= 10000))
+        && (!data.keys().hasAll(['relationships']) || (data.relationships is list && data.relationships.size() <= 200))
+        && (!data.keys().hasAll(['title']) || (data.title is string && data.title.size() <= 500))
+        && (!data.keys().hasAll(['roles']) || (data.roles is list && data.roles.size() <= 100))
+        && (!data.keys().hasAll(['tier']) || (data.tier is string && data.tier.size() <= 100))
+        && (!data.keys().hasAll(['element']) || (data.element is string && data.element.size() <= 100))
+        && (!data.keys().hasAll(['color']) || (data.color is string && data.color.size() <= 100))
+        && (!data.keys().hasAll(['function']) || (data.function is string && data.function.size() <= 10000))
+        && (!data.keys().hasAll(['identity']) || (data.identity is string && data.identity.size() <= 10000))
+        && (!data.keys().hasAll(['personality']) || (data.personality is string && data.personality.size() <= 10000))
+        && (!data.keys().hasAll(['originStory']) || (data.originStory is string && data.originStory.size() <= 25000))
+        && (!data.keys().hasAll(['experiences']) || (data.experiences is string && data.experiences.size() <= 25000))
+        && (!data.keys().hasAll(['provenance']) || isValidProvenance(data.provenance))
+        && data.ownerId == request.auth.uid;
+    }
+
+    function isValidLoreDocument(data) {
+      return data.title is string && data.title.size() <= 200
+        && data.category is string
+        && data.category in ['Geography', 'Magic System', 'History', 'Factions', 'Culture', 'Technology', 'Other', 'Core Charter', 'Legal & Operations', 'Architecture', 'System Safeguards']
+        && data.content is string && data.content.size() <= 50000
+        && data.version is number && data.version >= 1
+        && data.tags is list && data.tags.size() <= 50
+        && (!data.keys().hasAll(['relatedCharacterIds']) || (data.relatedCharacterIds is list && data.relatedCharacterIds.size() <= 100))
+        && (!data.keys().hasAll(['versionHistory']) || (data.versionHistory is list && data.versionHistory.size() <= 200))
+        && (!data.keys().hasAll(['provenance']) || isValidProvenance(data.provenance))
+        && data.ownerId == request.auth.uid;
+    }
+
+    function isValidMessage(data) {
+      return data.sender == 'user'
+        && data.text is string && data.text.size() <= 25000
+        && data.timestamp is string && data.timestamp.size() <= 50
+        && data.createdAt is string && data.createdAt.size() <= 100
+        && data.messageKind == 'conversation'
+        && data.provenance is map
+        && data.provenance.origin == 'user'
+        && data.provenance.evidenceStatus == 'user_record'
+        && isValidProvenance(data.provenance)
+        && (!data.keys().hasAll(['attachments']) || (data.attachments is list && data.attachments.size() <= 10))
+        && data.ownerId == request.auth.uid;
+    }
+
+    function isValidRuntimeState(data, worldId) {
+      return data.agent is string && data.agent.size() <= 200
+        && data.worldId is string && data.worldId == worldId
+        && data.ownerId == request.auth.uid
+        && data.revision is int && data.revision >= 1
+        && data.updatedAt is string && data.updatedAt.size() <= 100
+        && data.handoffJson is string && data.handoffJson.size() <= 100000
+        && data.signature is string && data.signature.size() == 64;
+    }
+
+    // --- COLLECTION RULES MATCHES ---
+
+    // 1. Worlds Collection
+    match /worlds/{worldId} {
+      allow get: if isSignedIn() && (resource == null || existing().ownerId == request.auth.uid);
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      
+      allow create: if isVerifiedUser() && isValidId(worldId) 
+        && incoming().keys().hasAll(['worldName', 'genre', 'description', 'highConcept', 'ownerId'])
+        && incoming().keys().size() >= 5
+        && incoming().keys().size() <= 8
+        && isValidWorld(incoming());
+        
+      allow update: if isVerifiedUser() && isValidId(worldId)
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == existing().createdAt
+        && isValidWorld(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['worldName', 'genre', 'description', 'highConcept', 'updatedAt']);
+        
+      allow delete: if ownsWorld(worldId) && isVerifiedUser() && existing().ownerId == request.auth.uid;
+ 
+      // 2. Characters Subcollection
+      match /characters/{characterId} {
+        allow get: if ownsWorld(worldId) && (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if ownsWorld(worldId) && resource.data.ownerId == request.auth.uid;
+        
+        allow create: if ownsWorld(worldId) && isVerifiedUser() && isValidId(characterId)
+          && incoming().ownerId == request.auth.uid
+          && incoming().keys().hasAll(['name', 'role', 'faction', 'bio', 'ownerId', 'createdAt', 'provenance'])
+          && isClientUserRecordProvenance(incoming().provenance)
+          && isValidCharacter(incoming());
+          
+        allow update: if ownsWorld(worldId) && isVerifiedUser() && isValidId(characterId)
+          && existing().ownerId == request.auth.uid
+          && incoming().ownerId == request.auth.uid
+          && existingIsClientUserRecord()
+          && incoming().createdAt == existing().createdAt
+          && provenanceUnchanged()
+          && isValidCharacter(incoming())
+          && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'role', 'faction', 'bio', 'traits', 'appearance', 'relationships', 'updatedAt', 'title', 'roles', 'tier', 'element', 'color', 'function', 'identity', 'personality', 'originStory', 'experiences']);
+          
+        allow delete: if ownsWorld(worldId) && isVerifiedUser()
+          && existing().ownerId == request.auth.uid
+          && existingIsClientUserRecord();
+      }
+ 
+      // 3. Lore Documents Subcollection
+      match /documents/{docId} {
+        allow get: if ownsWorld(worldId) && (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if ownsWorld(worldId) && resource.data.ownerId == request.auth.uid;
+        
+        allow create: if ownsWorld(worldId) && isVerifiedUser() && isValidId(docId)
+          && incoming().ownerId == request.auth.uid
+          && incoming().keys().hasAll(['title', 'category', 'content', 'version', 'ownerId', 'createdAt', 'provenance'])
+          && isClientUserRecordProvenance(incoming().provenance)
+          && isValidLoreDocument(incoming());
+          
+        allow update: if ownsWorld(worldId) && isVerifiedUser() && isValidId(docId)
+          && existing().ownerId == request.auth.uid
+          && incoming().ownerId == request.auth.uid
+          && existingIsClientUserRecord()
+          && (!existing().keys().hasAll(['createdAt']) || incoming().createdAt == existing().createdAt)
+          && provenanceUnchanged()
+          && isValidLoreDocument(incoming())
+          && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'content', 'tags', 'relatedCharacterIds', 'version', 'versionHistory', 'updatedAt']);
+          
+        allow delete: if ownsWorld(worldId) && isVerifiedUser()
+          && existing().ownerId == request.auth.uid
+          && existingIsClientUserRecord();
+      }
+ 
+      // 4. Session Messages Subcollection
+      match /messages/{messageId} {
+        allow get: if ownsWorld(worldId) && (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if ownsWorld(worldId) && resource.data.ownerId == request.auth.uid;
+        
+        allow create: if ownsWorld(worldId) && isVerifiedUser() && isValidId(messageId)
+          && incoming().ownerId == request.auth.uid
+          && incoming().keys().hasAll(['sender', 'text', 'timestamp', 'ownerId'])
+          && isValidMessage(incoming());
+          
+        allow update, delete: if false;
+      }
+
+      // 5. Agent Runtime State Subcollection
+      match /runtime/{stateId} {
+        function ownsStoredState() {
+          return resource != null
+            && existing().ownerId == request.auth.uid
+            && existing().worldId == worldId;
+        }
+        allow get, list: if ownsWorld(worldId) && isValidId(stateId) && ownsStoredState();
+        allow create: if ownsWorld(worldId) && isValidId(stateId) && isVerifiedUser()
+          && isValidRuntimeState(incoming(), worldId)
+          && incoming().revision == 1;
+        allow update: if ownsWorld(worldId) && isValidId(stateId) && isVerifiedUser() && ownsStoredState()
+          && incoming().ownerId == existing().ownerId
+          && incoming().worldId == existing().worldId
+          && incoming().revision == existing().revision + 1
+          && isValidRuntimeState(incoming(), worldId);
+        allow delete: if false;
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Integrity gate for Azril working-profile files. Hash matches prove package integrity only; they do not verify identity, continuity, authority, or factual truth.",
+  "entries": [
+    {
+      "path": "agents/azril/identity.md",
+      "sha256": "cc662f2e2aafafeef5db20f6d83914c1a6923caa85ef0d21f0b33930a594169d",
+      "status": "working_record",
+      "runtimeAllowed": true,
+      "note": "Working profile context only; not verified evidence."
+    },
+    {
+      "path": "agents/azril/behavior.md",
+      "sha256": "316e238017703d6864b561f74f8991d4bf0d06792fb5ac3f37fcc9e94d55cd81",
+      "status": "working_behavior",
+      "runtimeAllowed": false,
+      "note": "Not required by current runtime; withheld until provenance is independently reviewed."
+    },
+    {
+      "path": "agents/azril/safety.md",
+      "sha256": "c61b0dcede90395eb8276ab9360324ea3dac42c6bff91ae8d47745c81582c329",
+      "status": "working_safety",
+      "runtimeAllowed": true,
+      "note": "Scope guard only; not evidence proof."
+    },
+    {
+      "path": "agents/azril/sources.json",
+      "sha256": "e4bebae1ffac8d41f314e2d2ce14f87786cd47d5c52b8b7ed609afe53d22fa20",
+      "status": "working_source_index",
+      "runtimeAllowed": false,
+      "note": "Index references require independent source intake before promotion."
+    },
+    {
+      "path": "agents/azril/successor-preparation.md",
+      "sha256": "d7ea10b2ad831fc015c0de698a9ad2635201081bf647819a3f600e2a7f5a31ea",
+      "status": "working_scope_boundary",
+      "runtimeAllowed": true,
+      "note": "Successor-track scope boundary only; no audit authority implied."
+    }
+  ]
+}

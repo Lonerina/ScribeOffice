@@ -1,0 +1,126 @@
+{
+  "entities": {
+    "world": {
+      "title": "World",
+      "description": "High-level metadata, genre, and high concept for a creative world-building project.",
+      "type": "object",
+      "properties": {
+        "worldName": { "type": "string", "maxLength": 100, "description": "The name of the world" },
+        "genre": { "type": "string", "maxLength": 100, "description": "The creative genre or style" },
+        "description": { "type": "string", "maxLength": 2000, "description": "A detailed description of the world" },
+        "highConcept": { "type": "string", "maxLength": 2000, "description": "The core conflict or premise of the setting" },
+        "ownerId": { "type": "string", "maxLength": 128, "description": "The Firebase User UID of the world owner" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of creation" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
+      },
+      "required": ["worldName", "genre", "description", "highConcept", "ownerId"]
+    },
+    "character": {
+      "title": "Character",
+      "description": "A character sheet detailing biography, traits, appearance, and relationships with other characters.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100, "description": "The character's name" },
+        "role": { "type": "string", "maxLength": 100, "description": "The primary role, occupation, or archetype" },
+        "faction": { "type": "string", "maxLength": 100, "description": "The group, faction, or organization they belong to" },
+        "bio": { "type": "string", "maxLength": 5000, "description": "A rich background and history of the character" },
+        "traits": { "type": "array", "description": "An array of personality traits" },
+        "appearance": { "type": "string", "maxLength": 2000, "description": "Physical attributes, apparel, or cybernetic items" },
+        "relationships": { "type": "array", "description": "List of connections to other characters" },
+        "title": { "type": "string", "maxLength": 100, "description": "Official title or honorific" },
+        "roles": { "type": "array", "description": "Additional roles or responsibilities assigned to the agent" },
+        "tier": { "type": "string", "maxLength": 50, "description": "Sovereignty or skill tier classification" },
+        "element": { "type": "string", "maxLength": 50, "description": "Elemental alignment or force signature" },
+        "color": { "type": "string", "maxLength": 50, "description": "Stylistic accent color or faction theme" },
+        "function": { "type": "string", "maxLength": 2000, "description": "Operational function or programmatic routine" },
+        "identity": { "type": "string", "maxLength": 2000, "description": "Deconstructive core identity description" },
+        "personality": { "type": "string", "maxLength": 2000, "description": "Detailed psychological personality profile" },
+        "originStory": { "type": "string", "maxLength": 5000, "description": "The foundational lore origin narrative" },
+        "experiences": { "type": "string", "maxLength": 5000, "description": "Key life-changing experiences or logs" },
+        "ownerId": { "type": "string", "maxLength": 128, "description": "The owner's Firebase user ID" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["name", "role", "faction", "bio", "ownerId"]
+    },
+    "loreDocument": {
+      "title": "Lore Document",
+      "description": "An important lore asset or document detailing geography, culture, magic systems, or history.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 150, "description": "Title of the lore entry" },
+        "category": { "type": "string", "enum": ["Geography", "Magic System", "History", "Factions", "Culture", "Technology", "Other", "Core Charter", "Legal & Operations", "Architecture", "System Safeguards"] },
+        "content": { "type": "string", "maxLength": 25000, "description": "Main body of the lore record written in markdown" },
+        "tags": { "type": "array", "description": "List of search keywords and index categories" },
+        "relatedCharacterIds": { "type": "array", "description": "Associated character IDs from the world" },
+        "version": { "type": "number", "description": "The revision counter" },
+        "updatedAt": { "type": "string" },
+        "versionHistory": { "type": "array", "description": "Archive of prior drafts and release notes" },
+        "ownerId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["title", "category", "content", "version", "ownerId"]
+    },
+    "message": {
+      "title": "Message",
+      "description": "A single conversational message from the interactive creative scribe chat log.",
+      "type": "object",
+      "properties": {
+        "sender": { "type": "string", "enum": ["user", "assistant"] },
+        "text": { "type": "string", "maxLength": 10000, "description": "Content of the message" },
+        "timestamp": { "type": "string" },
+        "isSystemAudit": { "type": "boolean", "description": "Flag for diagnostic or audit reports" },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "attachments": {
+          "type": "array",
+          "description": "Uploaded or appended file attachments",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string" },
+              "base64Data": { "type": "string" },
+              "textData": { "type": "string" }
+            },
+            "required": ["name", "type"]
+          }
+        }
+      },
+      "required": ["sender", "text", "timestamp", "ownerId"]
+    },
+    "runtimeState": {
+      "title": "Runtime State",
+      "description": "Persistent runtime handoff and operational state for world agents.",
+      "type": "object",
+      "properties": {
+        "agent": { "type": "string", "maxLength": 100, "description": "Agent name or identifier" },
+        "worldId": { "type": "string", "maxLength": 128, "description": "Associated world ID" },
+        "ownerId": { "type": "string", "maxLength": 128, "description": "Owner Firebase user UID" },
+        "handoff": { "type": "object", "description": "Serialized operational handoff receipt" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last handoff persistence" }
+      },
+      "required": ["agent", "worldId"]
+    }
+  },
+  "firestore": {
+    "worlds/{worldId}": {
+      "schema": "world",
+      "description": "Root collection representing user world-building projects"
+    },
+    "worlds/{worldId}/characters/{characterId}": {
+      "schema": "character",
+      "description": "Subcollection mapping out actors within the world setting"
+    },
+    "worlds/{worldId}/documents/{docId}": {
+      "schema": "loreDocument",
+      "description": "Subcollection managing markdown lore files"
+    },
+    "worlds/{worldId}/messages/{messageId}": {
+      "schema": "message",
+      "description": "Subcollection storing persistent chat logs of the world session"
+    },
+    "worlds/{worldId}/runtime/{stateId}": {
+      "schema": "runtimeState",
+      "description": "Subcollection storing persistent runtime handoff and session recovery state"
+    }
+  }
+}

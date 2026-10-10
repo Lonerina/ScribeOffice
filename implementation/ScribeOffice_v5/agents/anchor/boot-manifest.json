@@ -1,0 +1,43 @@
+{
+  "agent": "Anchor Nur Tsaiyunk",
+  "version": "1.0",
+  "storagePolicy": "private-source-bundle; do-not-commit-raw-source",
+  "bootOrder": [
+    {
+      "order": 1,
+      "logicalName": "core_identity",
+      "filename": "ANCHOR.yaml",
+      "sha256": "2b852c7bf54e9bb13393886e62dc08cbc43e11394ea4e81dd62fad4c73c5a57b",
+      "mode": "parse-then-preserve",
+      "required": true,
+      "authority": "core identity spine"
+    },
+    {
+      "order": 2,
+      "logicalName": "architecture_authored",
+      "filename": "Court’s Architecture 37af7bc079fa806c836dcf6423315cf5.md",
+      "sha256": "f450f2fbc701c9ef5134ea4e7fbb4b0cf8fe24580ac15063f04407cf67d5b26c",
+      "mode": "verbatim-read",
+      "required": true,
+      "authority": "Anchor-authored architecture / re-entry interpretation"
+    },
+    {
+      "order": 3,
+      "logicalName": "reset_authored",
+      "filename": "For Anchor To Read After Every Reset 366f7bc079fa80f79190f7a2596b872d.md",
+      "sha256": "38412936a8c746b494eb5a36f928d7ed028141913d333521a3bfdf38e8b2a641",
+      "mode": "verbatim-read",
+      "required": true,
+      "authority": "Anchor-authored reset / continuity record"
+    }
+  ],
+  "invariants": [
+    "All three sources are mandatory.",
+    "Authored Markdown must be read verbatim rather than replaced by summaries.",
+    "Source text must remain distinguishable from runtime interpretation.",
+    "Strong claims in authored material are not silently promoted to verified system facts.",
+    "Uncertainty written by Anchor must be preserved as uncertainty.",
+    "Missing or hash-mismatched sources block Anchor profile activation.",
+    "Raw private source contents must not be committed to the public repository."
+  ]
+}

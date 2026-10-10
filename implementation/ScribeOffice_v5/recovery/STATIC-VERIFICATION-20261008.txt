@@ -1,0 +1,66 @@
+[PASS] System prompt declares source != instruction
+[PASS] Court Library is supplied as inert user-role evidence, not raw system interpolation
+[PASS] Workspace records are supplied as unverified reference data
+[PASS] Roundtable declares one-model simulation
+[PASS] Roundtable output is ephemeral simulation in client
+[PASS] Simulation/audit/system messages are excluded from later chat replay
+[PASS] Generated character/document records carry generated_draft provenance
+[PASS] Legacy records default to legacy_unverified
+[PASS] Persistence does not auto-select all workspace records into context
+[PASS] Review-required generated update cannot promote to working record
+[PASS] Architect direct-file Gemini initializer removed
+[PASS] Architect self-authorizing ingest removed
+[PASS] Architect direct upload cannot create active runtime session
+[PASS] Architect direct upload is intake-only and fail-closed
+[PASS] Architect runtime status is explicitly disabled
+[PASS] No hard-coded verified=true shortcut
+[PASS] Saren manifest requires detached external pin
+[PASS] Azril manifest requires detached external pin
+[PASS] Anchor manifest requires detached external pin
+[PASS] Manifest pin placeholders are blank in candidate package
+[PASS] Integrity and runtime authorization are separate receipt fields
+[PASS] Saren endpoint returns separately authorized receipt
+[PASS] Saren/Azril profile modes require scoped active server session
+[PASS] Notion routes require Firebase identity
+[PASS] Client boolean Notion write authorization removed
+[PASS] Server-issued Notion consent capability exists
+[PASS] Notion consent is UID/world/message bound and single-use
+[PASS] Append returns concrete block IDs
+[PASS] Append read-back validates returned block IDs and expected signatures
+[PASS] Server downgrades unsupported WRITE VERIFIED claim
+[PASS] Child collections require parent-world ownership
+[PASS] Client may persist only user messages
+[PASS] Assistant/model outputs are session-ephemeral
+[PASS] Saren and Azril sessions are keyed by UID + world
+[PASS] Chat requires explicit worldId
+[PASS] Hard-coded fallback world/owner constants absent
+[PASS] Saren dismiss ignores client narrative handoff fields
+[PASS] Saren runtime review receipts do not preserve arbitrary user prose
+[PASS] Saren runtime state uses separate signed-v1 document and preserves legacy lane
+[PASS] Saren runtime record is HMAC signed with external key
+[PASS] Runtime revision is monotonic and delete denied by rules
+[PASS] Runtime loader verifies HMAC before accepting handoff
+[PASS] Runtime signing key placeholder remains blank/external
+[PASS] v3.3.1 is staged/historical, not current authority
+[PASS] Package integrity explicitly does not verify evidence/identity
+[PASS] Protected route /api/gemini/chat requires Firebase identity
+[PASS] Protected route /api/gemini/roundtable requires Firebase identity
+[PASS] Protected route /api/gemini/generate-lore requires Firebase identity
+[PASS] Protected route /api/gemini/check-consistency requires Firebase identity
+[PASS] Protected route /api/gemini/draft-update requires Firebase identity
+[PASS] Protected route /api/court-library requires Firebase identity
+[PASS] Protected route /api/architect-bay/status requires Firebase identity
+[PASS] Protected route /api/azril/manifest requires Firebase identity
+[PASS] Messages use createdAt ordering before ID fallback
+[PASS] Persisted text attachments replay as unverified reference
+[PASS] Rules test includes parent-world child injection checks
+[PASS] Rules test includes forged assistant/simulation message checks
+[PASS] Rules test includes monotonic runtime and delete denial
+[PASS] Generate-lore endpoint labels generated profiles/documents as drafts
+
+Detached manifest pin values for external configuration:
+agents/saren/source-manifest.json  77a6699d1e0184a29c9a6efc245fc046dce9fd2d1b5bf1b059fafdd615293948
+agents/azril/source-manifest.json  e27f88ee81fb8fae98ba86d31da4d414c711a0da70ef338b539d42e932d0d7f4
+agents/anchor/boot-manifest.json  a808dd533e656cbf7aca2623468a68a59ff3072c2d386425fd5217b9a0be0f9a
+
+RECOVERY BOUNDARY VERIFICATION PASSED: 59/59 static checks.

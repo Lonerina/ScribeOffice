@@ -1,0 +1,85 @@
+[PASS] Recovery principles retain source != instruction
+[PASS] Normal chat injects Court metadata only
+[PASS] Full-library preload without explicit IDs is rejected
+[PASS] No server call preloads entire staged Court Library
+[PASS] Current authority has detached manifest pin
+[PASS] Current authority source files are hash checked
+[PASS] Consistency audit fails before generation if current authority absent
+[PASS] Draft update fails before generation if current authority absent
+[PASS] Normal chat can declare authorityRequired and fail closed
+[PASS] Saren safety no longer reloads quarantined behavior.md
+[PASS] Roundtable is labeled one-model simulation
+[PASS] Simulation output is ephemeral on client
+[PASS] Simulation/audit/system messages excluded from replay
+[PASS] Client Firestore messages are user-only
+[PASS] Generated document has server persistence endpoint
+[PASS] Generated character has server persistence endpoint
+[PASS] Server fixes generated evidence status
+[PASS] Generated UI origin is separate from editable tags
+[PASS] Generated document save uses server endpoint
+[PASS] Generated character save uses server endpoint
+[PASS] Chat character sheet import uses generated server endpoint
+[PASS] Client record create requires provenance
+[PASS] Client may create only user_record provenance
+[PASS] Client cannot mutate record provenance
+[PASS] Verified source remains outside client creation authority
+[PASS] Legacy provenance remains representable without silent promotion
+[PASS] Saren manifest uses detached external pin
+[PASS] Azril manifest uses detached external pin
+[PASS] Anchor manifest uses detached external pin
+[PASS] Detached pin placeholders stay external/blank
+[PASS] Saren runtime uses signed v2 lane
+[PASS] Saren handoff schema declares server-observed-only scope
+[PASS] Saren runtime handoff is HMAC signed
+[PASS] RECALL fails closed unless signed handoff restored
+[PASS] RECALL rechecks handoff during chat
+[PASS] Fresh MANIFEST does not inherit baseline lastHandoff
+[PASS] Dismiss requires active Saren session
+[PASS] Dismiss keeps session alive if persistence fails
+[PASS] Saren session carries a server-generated sessionId
+[PASS] Server-observed event helper exists
+[PASS] Audit events feed handoff scope
+[PASS] Draft update events feed handoff scope
+[PASS] Notion verified export feeds handoff scope
+[PASS] Court principal ACL exists
+[PASS] Notion principal ACL exists
+[PASS] ACL placeholders are external/blank
+[PASS] Court route /api/court-library requires principal ACL
+[PASS] Court route /api/architect-bay/status requires principal ACL
+[PASS] Court route /api/azril/manifest requires principal ACL
+[PASS] Court route /api/azril/dismiss requires principal ACL
+[PASS] Court route /api/architect-bay/manifest requires principal ACL
+[PASS] Court route /api/saren/manifest requires principal ACL
+[PASS] Court route /api/saren/dismiss requires principal ACL
+[PASS] Court route /api/gemini/chat requires principal ACL
+[PASS] Court route /api/gemini/roundtable requires principal ACL
+[PASS] Court route /api/gemini/generate-lore requires principal ACL
+[PASS] Court route /api/gemini/check-consistency requires principal ACL
+[PASS] Court route /api/gemini/draft-update requires principal ACL
+[PASS] Notion route /api/notion/write-consent requires Notion principal ACL
+[PASS] Notion route /api/notion/status requires Notion principal ACL
+[PASS] Notion route /api/notion/search requires Notion principal ACL
+[PASS] Notion route /api/notion/export requires Notion principal ACL
+[PASS] Child collections require parent-world ownership
+[PASS] Saren/Azril active sessions are UID+world scoped
+[PASS] No hard-coded world/owner fallback constants
+[PASS] Agent-initiated Notion writes are disabled in recovery runtime
+[PASS] Chat Notion write UI is disabled
+[PASS] Manual export requires fresh re-authentication in UI
+[PASS] Consent issuance verifies fresh auth_time server-side
+[PASS] Consent is export-only
+[PASS] Consent binds UID/world/message and one mutation
+[PASS] Manual export consumes exact export action capability
+[PASS] Manual export uses persisted exact read-back verification
+[PASS] Rules tests cover cross-world child injection
+[PASS] Rules tests cover forged assistant/simulation messages
+[PASS] Rules tests cover provenance minting denial
+[PASS] Rules tests use signed-v2 runtime lane
+[PASS] Runtime rules enforce +1 revision and deny delete
+
+Detached manifest pin values for external configuration:
+agents/saren/source-manifest.json  e98011d2378c97db405486191f87362fd7d47f26eed817f596ee274f17eebf59
+agents/azril/source-manifest.json  e27f88ee81fb8fae98ba86d31da4d414c711a0da70ef338b539d42e932d0d7f4
+agents/anchor/boot-manifest.json  a808dd533e656cbf7aca2623468a68a59ff3072c2d386425fd5217b9a0be0f9a
+
+RECOVERY BOUNDARY VERIFICATION PASSED: 78/78 static checks.

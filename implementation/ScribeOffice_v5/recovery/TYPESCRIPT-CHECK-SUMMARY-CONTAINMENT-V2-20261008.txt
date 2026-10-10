@@ -1,0 +1,12 @@
+# TypeScript Check Summary — Containment v2
+
+Date: 2026-10-08
+Command: `tsc --noEmit`
+Environment: project dependencies / node_modules are not installed in this recovery container.
+
+Raw compiler exit: non-zero due to missing modules / environment typings.
+Observed diagnostic classes: TS2304=1, TS2307=27, TS2503=1, TS2580=23, TS2875=3
+Expected environment/dependency classes filtered: TS2307, TS2580, TS2503, TS2875, TS2304.
+Additional diagnostic lines outside those classes: 0.
+
+This is not a dependency-complete compile pass. It only records that no additional TypeScript diagnostic class appeared in this environment.

@@ -1,0 +1,18 @@
+Saren Office Recovery — Containment v3 TypeScript Inspection
+Date: 2026-10-09
+
+Command: tsc --noEmit
+Result: non-zero (dependency-incomplete environment)
+
+Observed diagnostic codes: TS2304, TS2307, TS2503, TS2580, TS2875
+
+Observed classes:
+- TS2307 missing project modules/type declarations because node_modules is absent.
+- TS2580/TS2304 missing Node ambient globals/types for the same dependency-incomplete environment.
+- TS2875 JSX runtime unavailable because React dependencies/types are absent.
+- TS2503 NodeJS namespace unavailable because Node typings are absent.
+
+No additional diagnostic class appeared after the Containment v3 edits.
+
+This is NOT a dependency-complete compile pass and must not be represented as one.
+An npm dependency install was attempted in the container but timed out before node_modules was created; no production build or emulator pass is claimed.

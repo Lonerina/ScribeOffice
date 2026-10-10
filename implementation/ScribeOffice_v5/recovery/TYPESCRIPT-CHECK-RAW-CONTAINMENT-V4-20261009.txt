@@ -1,0 +1,53 @@
+server.ts(1,21): error TS2307: Cannot find module 'express' or its corresponding type declarations.
+server.ts(2,18): error TS2307: Cannot find module 'path' or its corresponding type declarations.
+server.ts(3,16): error TS2307: Cannot find module 'fs/promises' or its corresponding type declarations.
+server.ts(4,50): error TS2307: Cannot find module 'vite' or its corresponding type declarations.
+server.ts(5,56): error TS2307: Cannot find module '@google/genai' or its corresponding type declarations.
+server.ts(6,20): error TS2307: Cannot find module 'dotenv' or its corresponding type declarations.
+server.ts(7,20): error TS2307: Cannot find module 'crypto' or its corresponding type declarations.
+server.ts(8,98): error TS2307: Cannot find module 'firebase-admin/app' or its corresponding type declarations.
+server.ts(9,51): error TS2307: Cannot find module 'firebase-admin/firestore' or its corresponding type declarations.
+server.ts(43,37): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(106,37): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(111,37): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(118,27): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(135,24): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(176,25): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(219,18): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(226,26): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(335,22): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(369,26): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(446,22): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(452,26): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(1405,20): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(1499,33): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(1617,17): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(2018,29): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(2547,27): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(2557,40): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(2619,7): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+server.ts(2626,32): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+src/App.tsx(1,52): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+src/App.tsx(35,8): error TS2307: Cannot find module 'lucide-react' or its corresponding type declarations.
+src/App.tsx(36,21): error TS2307: Cannot find module 'mammoth' or its corresponding type declarations.
+src/App.tsx(37,23): error TS2307: Cannot find module 'jspdf' or its corresponding type declarations.
+src/App.tsx(41,68): error TS2307: Cannot find module 'firebase/auth' or its corresponding type declarations.
+src/App.tsx(42,89): error TS2307: Cannot find module 'firebase/firestore' or its corresponding type declarations.
+src/App.tsx(1409,19): error TS2503: Cannot find namespace 'NodeJS'.
+src/App.tsx(2236,7): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+src/components/SimpleMarkdown.tsx(1,19): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+src/components/SimpleMarkdown.tsx(7,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+src/firebase.ts(1,31): error TS2307: Cannot find module 'firebase/app' or its corresponding type declarations.
+src/firebase.ts(2,71): error TS2307: Cannot find module 'firebase/auth' or its corresponding type declarations.
+src/firebase.ts(3,30): error TS2307: Cannot find module 'firebase/firestore' or its corresponding type declarations.
+src/firebase.ts(67,39): error TS2307: Cannot find module 'firebase/firestore' or its corresponding type declarations.
+src/main.tsx(1,26): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+src/main.tsx(2,26): error TS2307: Cannot find module 'react-dom/client' or its corresponding type declarations.
+src/main.tsx(7,3): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+vite.config.ts(1,25): error TS2307: Cannot find module '@tailwindcss/vite' or its corresponding type declarations.
+vite.config.ts(2,19): error TS2307: Cannot find module '@vitejs/plugin-react' or its corresponding type declarations.
+vite.config.ts(3,18): error TS2307: Cannot find module 'path' or its corresponding type declarations.
+vite.config.ts(4,28): error TS2307: Cannot find module 'vite' or its corresponding type declarations.
+vite.config.ts(11,27): error TS2304: Cannot find name '__dirname'.
+vite.config.ts(17,12): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.
+vite.config.ts(19,14): error TS2580: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node`.

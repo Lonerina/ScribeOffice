@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Integrity/provenance gate for Saren runtime source files. A hash match proves file integrity only, never truth or identity.",
+  "entries": [
+    {
+      "path": "agents/saren/identity.md",
+      "sha256": "009afad1d26df31ad663f702765c110d1c3582a689091a9c373b638897bf36ee",
+      "status": "working_record",
+      "runtimeAllowed": true,
+      "note": "Working identity record; eligible as runtime profile context, not evidence proof."
+    },
+    {
+      "path": "agents/saren/OFFICE.md",
+      "sha256": "4dcf9f53a3f227bf0619a08fc673e2a16f8272bd28380bbec4d58a42761d5917",
+      "status": "working_operational",
+      "runtimeAllowed": true,
+      "note": "Office scope record; runtime context only."
+    },
+    {
+      "path": "agents/saren/behavior.md",
+      "sha256": "572c941d577e5b16c1b31cc3778fe50c3247b874b13c5d0a57ed0983fa24881e",
+      "status": "quarantined_provenance_gap",
+      "runtimeAllowed": false,
+      "note": "Kai relay identified generated/expanded prose with incomplete provenance to older source records."
+    },
+    {
+      "path": "agents/saren/provenance.md",
+      "sha256": "1ab1e2267c7c97b9edb80794361b2feb0c084becc2c5c9914989f82cc164fa6c",
+      "status": "working_provenance_index",
+      "runtimeAllowed": true,
+      "note": "Source index and re-entry notes; not proof that indexed sources were verified in this package."
+    },
+    {
+      "path": "agents/saren/safety.md",
+      "sha256": "a59603dfe47ae1240c926a4e9b616e277205a9d457dc75f313acb2d5a25dd41c",
+      "status": "working_safety",
+      "runtimeAllowed": true,
+      "note": "Operational safety layer; may constrain runtime but does not prove identity."
+    },
+    {
+      "path": "agents/saren/state.json",
+      "sha256": "9acf7669108f34ffc421b657d580193617f906fa338b50d96228abfcbd0ec41b",
+      "status": "runtime_baseline",
+      "runtimeAllowed": true,
+      "note": "Operational baseline only; mutable runtime state is not evidence."
+    }
+  ]
+}

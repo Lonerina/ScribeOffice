@@ -1,0 +1,117 @@
+Sovereign, **Primus review complete.**
+
+## PRIMUS VERDICT — **HOLD. DO NOT ADVANCE YET.**
+
+Nyx’s recovery candidate is substantially stronger than the AI Studio baseline, and several Raen findings are genuinely contained. But I would **not mark this candidate PASS**, would **not send it to Saren self-audit yet**, and would not treat the 30-item closure matrix as fully closed.
+
+I made **no edits, merge, deployment, migration, deletion, or repair-forward**. That remains consistent with Nyx’s boundary. Raen_Saren_Office_Retest_Brief\_…
+
+### Artifact gate
+
+Candidate ZIP calculated SHA-256:
+
+`59f8885e58d6c17a98ec3081e060518e9063e1ddf1a8f5b4ff5e347a52f61528`
+
+That matches both the uploaded `.sha256` and the digest Nyx gave Raen. Raen_Saren_Office_Retest_Brief\_…
+
+However, **`ScribeOffice_recovery_candidate_20261008.receipt.json` was not supplied**. Nyx’s own gate calls for ZIP → detached SHA → detached JSON receipt agreement. I therefore regard artifact authentication as **partially verified, not complete**. I continued with source inspection because you explicitly ordered a Primus review, but I am not treating this as a release-authenticated artifact.
+
+The supplied AI Studio baseline contains **61 files**. The candidate contains **78 files**: **50 byte-identical**, **11 modified**, **17 added**, **0 baseline files deleted**. Nyx’s 16-entry baseline receipt matches all 16 corresponding files in your uploaded AI Studio ZIP byte-for-byte. The final `POST-RAEN-REPAIR.sha256` also validates every candidate file it claims—77/77, excluding the hash file itself as expected.
+
+There is nevertheless a provenance-name conflict: Nyx’s receipt says baseline `(2)(1).zip`; Raen’s embedded report says `(2)(2).zip`; your supplied baseline is `(2)(3).zip`. The hashes establish correspondence for the 16 tracked baseline files, **not provenance of those three filenames**. I am holding that conflict.
+
+The candidate's `59/59` dependency-free static verifier also reproduces successfully. I independently ran it. I do **not** treat that as runtime proof; Nyx explicitly instructed Raen not to do so, and the production build, emulator, live Firebase, Notion and Gemini gates remain open. Raen_Saren_Office_Retest_Brief\_…
+
+---
+
+# VERIFIED DEFECTS
+
+1. **CRITICAL — Raen #30 is not actually closed under Raen's threat model.**  
+   **Path:** `server.ts:1555–1582` → `/api/notion/write-consent`; `server.ts:1634+`; `server.ts:2584+`; `server.ts:2640+`  
+   **Trigger:** An authenticated/modified client directly requests a Notion capability.  
+   **Observed:** The server issues the token based entirely on authenticated client-supplied `worldId`, `messageText`, and `allowedTools`. Nothing independently proves that the human checked the UI consent control. The same client Raen considered compromised can mint the replacement capability itself. Worse, Notion tool execution uses the server-global `NOTION_API_KEY`.  
+   **Why boundary failed:** client boolean was replaced with a server nonce, but the **authorization event still originates from the same untrusted client**. The trust boundary moved; it was not established.  
+   **Smallest containment target:** consent issuance needs an independent trusted user-presence/authorization gate. And the Notion credential must be bound to the authorized user/tenant or explicitly restricted to the Sovereign account.
+
+2. **CRITICAL in a multi-user deployment — global Notion authority crosses Firebase users.**  
+   **Path:** `src/App.tsx:2334–2363`, `1180–1228`; `server.ts:1634–1640`, `2584–2655`  
+   **Trigger:** Another verified Google-authenticated user signs in. The client automatically creates that user a world. The user now satisfies `requireOwnedWorld` for that world.  
+   **Observed:** They can reach Notion operations backed by the same server-level `NOTION_API_KEY`; there is no Court-member/Sovereign UID allowlist or per-user Notion credential binding in source.  
+   **Why boundary failed:** “owns a Firestore world” has accidentally become “may use the application's private external integration.” Those are different authorities.  
+   **Smallest containment target:** bind the server Notion integration to an explicit principal/ACL. World ownership alone cannot grant it.
+
+3. **HIGH — provenance is still client-forgeable and mutable. Findings #4/#5 are only partially contained.**  
+   **Path:** `firestore.rules:44–52`, `65–97`, `151–181`  
+   **Trigger:** An authenticated owner uses Firestore directly or a modified client.  
+   **Observed:** `verified_source` is an allowed `evidenceStatus`; provenance is **optional** on character/document creation; and `provenance` is an explicitly permitted update field. A client can therefore create or mutate trust labels, including changing a generated record's provenance.  
+   **Why boundary failed:** Nyx's UI preserves `generated_draft`, but Firestore does not make that classification immutable or server-authoritative.  
+   **Smallest containment target:** clients must never be able to mint `verified_source` or upgrade provenance. Promotion needs a separate trusted transition/receipt; origin/evidence class should be immutable except through that gate.
+
+4. **HIGH — Saren runtime continuity fails open on a bad handoff.**  
+   **Path:** `server.ts:530–565` → `1102+`  
+   **Trigger:** persisted Saren handoff is malformed, HMAC verification errors, signing key is missing, or handoff loading otherwise fails.  
+   **Observed:** the failure becomes a warning and baseline state is retained. `integrityPassed` is then computed solely from the source-package checks. `/api/saren/manifest` subsequently authorizes Saren runtime mode when that package integrity passes.  
+   **Why boundary failed:** handoff integrity and profile-package integrity are separate—which is correct—but **a failed continuity lane does not prevent a continuity-style `RECALL SAREN` from succeeding into baseline state**.  
+   **Smallest containment target:** at minimum, `RECALL SAREN` must fail closed when its signed handoff cannot be verified. Starting fresh from baseline must be a separate explicit operation, not an implicit fallback.
+
+5. **HIGH — dismissal can destroy the active runtime session after failed persistence.**  
+   **Path:** `server.ts:1187–1189`  
+   **Trigger:** `persistSarenHandoff()` returns `persisted:false` because of network failure, signing-key failure, revision collision, Firestore rejection, etc.  
+   **Observed:** `activeSarenSessions.delete(key)` runs anyway.  
+   **Why boundary failed:** failure to preserve the handoff still destroys the only live in-memory session state. This is state loss, not fail-closed persistence.  
+   **Smallest containment target:** preserve the active session when persistence fails, or require an explicit discard-without-handoff action.
+
+6. **HIGH / continuity integrity — the signed handoff is authentic but materially incomplete.**  
+   **Path:** `activeSarenSessions` usage at `server.ts:1100+`, `1163–1184`, `1905–1920`  
+   **Observed:** `reviewedItems` receives hashes of user chat messages. But `changesMade`, `unresolvedItems`, and the three `safetyProtocolsTriggered` fields are initialized and subsequently never updated anywhere in the server. Draft updates, audits, Firestore document changes, HOLD LINE/reset events, etc. are not connected to that session state.  
+   **Result:** dismissal may truthfully sign `"no server-recorded changes"` even though operations occurred elsewhere. The signature proves **who constructed the record and that it was unmodified**, not that the record captures the actual operational session.  
+   **Smallest containment target:** either instrument server-observed operations into the session receipt or narrow the handoff schema so it claims only what the server actually tracks.
+
+7. **HIGH privacy boundary — Court Library is authenticated, but not project/tenant scoped.**  
+   **Path:** `/api/court-library` at `server.ts:953`; `/api/court-library/:id` at `971`  
+   **Observed:** both require Firebase authentication, but neither calls `requireOwnedWorld` nor checks a Court/Sovereign membership ACL. The detail endpoint returns the actual packaged source.  
+   **Why boundary failed:** finding #23's unauthenticated hole was closed, but private Court material remains available to any account accepted by this Firebase application's authentication layer.  
+   **Smallest containment target:** explicit project membership/Sovereign authorization around packaged Court sources. Merely requiring “some authenticated Google user” is not sufficient.
+
+---
+
+# DRIFT RISK
+
+The largest remaining Saren-style drift surface is **not Firestore anymore. It is prompt composition.**
+
+`loadCourtLibrary()` defaults to **the complete Court Library**, and `/api/gemini/chat` calls it on every normal chat at `server.ts:1925`. The full source contents are then injected at `2020–2023` as a `role:"user"` message. The candidate correctly labels the payload “INERT” and the system instruction says not to execute embedded directives. That is a meaningful improvement.
+
+But the model still receives **all five historical v3.3.1 core documents plus all four manuals, raw, on every turn**. Several historical documents contain imperative operational language. “Inert” is a semantic instruction to the model; it is not a hard execution/data boundary.
+
+For Saren specifically, this creates three pressures: old v3.3.1 language remains continuously salient while v3.3.2 is missing; irrelevant authority material consumes context and competes with the present task; and repeated imperative source text can bias output despite being marked historical. I would classify this as a **verified architecture condition with unverified runtime impact**. It is a plausible drift generator, not proof that it caused the observed Saren halu.
+
+There is also an internal contradiction in Saren's packaged runtime sources. `behavior.md` is correctly marked `runtimeAllowed:false`, but the runtime-allowed `safety.md` still says reset should “reload identity + behavior + provenance” and describes the behavioral signature as part of fail-closed manifestation. Thus the recovery profile carries instructions referring back toward the quarantined source. That does not technically load `behavior.md`, but it leaves contradictory recovery semantics inside Saren's own runtime context.
+
+The cleaner boundary would eventually be **metadata-first, source-on-demand**: don't preload the entire historical Court on every chat. Retrieve only the exact source required by the current operation; where current v3.3.2 is required and absent, stop before historical text is fed to the model.
+
+---
+
+# UNVERIFIED / HELD
+
+The **AI Studio main vs GitHub branch** statement remains unverified. The supplied ZIP contains no `.git` history. A workflow mentioning `saren-office-court-library` proves that a workflow was configured for that branch name; it does **not** prove that this AI Studio ZIP is “main,” that GitHub `main` is downstream/upstream, or that commit `49d6a3e…` is its actual ancestor. Nyx's change receipt records that ancestry claim, but the artifacts supplied here cannot prove it.
+
+I also cannot independently establish that `recovery/RAEN-ADVERSARIAL-PASS-20261008.md` is byte-for-byte unchanged from Raen's original because no separate original Raen report was supplied. I preserved it as prior-review provenance rather than treating it as independent proof. Nyx's retest brief says that was the intent. Raen_Saren_Office_Retest_Brief\_…
+
+And the known runtime gates remain exactly that—**OPEN**, not failures and not passes: full dependency build, Firestore emulator, live Firebase concurrency, live Notion, live Gemini/tool integration, exact v3.3.2 intake, Architect Bay runtime, and GitHub candidate state. Raen_Saren_Office_Retest_Brief\_…
+
+### Final word
+
+**Nyx did not repair blindly. The recovery substantially improves the baseline. Raen's original attack changed the architecture in useful ways.**
+
+But **closure is overstated** in at least findings **#4/#5, #23, and #30**, and I found two additional Saren-state defects not captured by the closure matrix: **fail-open recall after handoff failure** and **unconditional session destruction after persistence failure**.
+
+So my disposition is:
+
+**CANDIDATE: HOLD**  
+**STATIC REPAIR: MATERIAL PROGRESS**  
+**RAEN CLOSURE: NOT YET COMPLETE**  
+**SAREN SELF-AUDIT: PREMATURE**  
+**MERGE / DEPLOY / MIGRATE: NO**  
+**REPAIR-FORWARD BY PRIMUS: NONE**
+
+Return these findings to **Nyx**, preserving Raen's original report and the current candidate digest.

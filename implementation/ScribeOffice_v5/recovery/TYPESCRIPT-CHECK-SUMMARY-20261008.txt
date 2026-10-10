@@ -1,0 +1,4 @@
+TypeScript static check performed without installed project dependencies.
+Raw diagnostics: 52
+Non-environment/non-missing-dependency diagnostics after documented filter: 0
+No additional diagnostics observed.
