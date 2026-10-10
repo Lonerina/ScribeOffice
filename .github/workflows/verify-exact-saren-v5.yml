@@ -410,7 +410,10 @@ jobs:
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
-          echo '=== Document frontend file references ==='
-          rg -n 'addDoc\(|setDoc\(|createDocument|handleCreate|saveDocument|Create Document|New Document|generate-lore|draft-update' src --glob '!**/*.css' | head -110 || true
-          echo '=== Document Firestore collection references ==='
-          rg -n -C 3 'collection\([^\n]*documents|doc\([^\n]*documents' src | head -130 || true
+          echo '=== Frontend inventory ==='
+          find src -maxdepth 4 -type f | head -85
+          echo '=== Document action references ==='
+          grep -RInE 'addDoc\\(|setDoc\\(|createDocument|handleCreate|saveDocument|Create Document|New Document|generate-lore|draft-update' src --include='*.tsx' --include='*.ts' | head -125 || true
+          echo '=== Collection references ==='
+          grep -RInE 'documents|collection\\(' src --include='*.tsx' --include='*.ts' | grep -E 'documents|Firestore' | head -100 || true
+          echo 'TRACE COMPLETED WITH GREP'
