@@ -260,13 +260,13 @@ jobs:
           const base={agent:'Saren Nur Tsaiyunk',worldId:world,ownerId:owner,revision:1,updatedAt:new Date().toISOString(),handoffJson:JSON.stringify({schemaVersion:'saren-handoff-v3',sessionId:'integration'})};
           async function put(values){
             const fields={};for(const [k,v] of Object.entries(values))fields[k]=typeof v==='number'?{integerValue:String(v)}:{stringValue:v};
-            const res=await fetch(host+path,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields})});
+            const res=await fetch(host+path,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer owner'},body:JSON.stringify({fields})});
             assert.ok(res.ok,'emulator test fixture write '+res.status+' '+(await res.text()));
           }
           async function check(label,mutate,expected){
             const rec={...base,signature:sign(base.worldId,base.ownerId,base.revision,base.updatedAt,base.handoffJson)};mutate(rec);
             await put(rec);
-            const result=await load(world,owner);
+            const result=await load(world,owner,'owner');
             assert.equal(result.status,expected,label+': '+JSON.stringify({status:result.status,error:result.error}));
             console.log('PASS',label,result.status);
           }
