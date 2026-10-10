@@ -115,3 +115,17 @@ jobs:
             echo "=== firebase.json ==="
             cat firebase.json
           fi
+
+      - name: Set up Java for Firestore emulator
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Execute isolated Firestore rules and lifecycle tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          npm install --no-save --no-package-lock --no-audit --no-fund @firebase/rules-unit-testing
+          npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-saren-recovery --config firebase.json 'node test-rules-emulator.mjs && node verify-saren-lifecycle.mjs'
