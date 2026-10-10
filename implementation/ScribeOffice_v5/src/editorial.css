@@ -1,0 +1,107 @@
+/* SAREN OFFICE — EDITORIAL WORKSPACE CONCEPT v1
+   Visual-only staging redesign: no authority, persistence, or route changes.
+   Warm ink, midnight blue, antique brass; high-contrast readable surfaces.
+*/
+.saren-editorial {
+  --so-bg:#101820; --so-panel:#17232c; --so-panel-alt:#1c2a32;
+  --so-border:#34434b; --so-brass:#cfb780; --so-text:#f3f0e8;
+  --so-muted:#bac7cb;
+  color:var(--so-text);
+  background:radial-gradient(ellipse at 10% 0%, #20313c 0%, #101820 44%, #0d151c 100%);
+  font-size:15px;
+  letter-spacing:.006em;
+}
+.saren-editorial::selection {background:#b99a58;color:#0b1218}
+.saren-editorial header {
+  background:linear-gradient(115deg,#182833 0%,#131f27 70%) !important;
+  border-color:#40515b !important;
+  border-bottom-width:1px;
+  box-shadow:0 12px 36px #03090d50;
+  padding-block:1rem !important;
+}
+.saren-editorial header h1 {
+  font-family:"Playfair Display",Georgia,serif !important;
+  font-style:normal !important;
+  font-weight:600; letter-spacing:-.025em;
+  color:#f7f1e3 !important;
+  font-size:clamp(1.35rem,2vw,1.75rem) !important;
+}
+.saren-editorial header h1 span {
+  font-family:"Inter",sans-serif!important;
+  font-style:normal;letter-spacing:.14em;
+}
+.saren-editorial header p {color:#b5c6cc !important}
+.saren-editorial nav[aria-label="Workspace Navigation"] {
+  background:#14222c !important;
+  border-color:#354650 !important;
+  box-shadow:inset -1px 0 #34434b, 6px 0 24px #050e1420;
+}
+.saren-editorial nav[aria-label="Workspace Navigation"] > div:first-child {gap:.45rem}
+.saren-editorial nav[aria-label="Workspace Navigation"] button {
+  border-radius:.6rem !important;
+  font-family:"Inter",sans-serif !important;
+  font-size:.77rem !important;
+  letter-spacing:.04em !important;
+  text-transform:none !important;
+  font-weight:650 !important;
+}
+.saren-editorial nav[aria-label="Workspace Navigation"] button[aria-current="page"]{
+  background:#31424a !important;
+  border-color:#bba36c !important;
+  color:#fff6e3 !important;
+  box-shadow:inset 3px 0 #d8bb7b !important;
+}
+.saren-editorial main {
+  background:transparent !important;
+  min-width:0;
+}
+.saren-editorial aside {
+  background:#13212a !important;
+  border-color:#354650 !important;
+}
+.saren-editorial :is(main,aside) h2,
+.saren-editorial :is(main,aside) h3 {
+  letter-spacing:-.012em;
+}
+.saren-editorial :is(main,aside) p {line-height:1.6}
+.saren-editorial :is(main,aside) .font-mono {letter-spacing:0}
+.saren-editorial :is(main,aside) .text-\[10px\],
+.saren-editorial :is(main,aside) .text-\[11px\] {font-size:12px}
+.saren-editorial :is(main,aside) button {
+  min-height:36px;
+  transition:background-color .15s ease,border-color .15s ease,transform .15s ease;
+}
+.saren-editorial button:focus-visible,
+.saren-editorial a:focus-visible,
+.saren-editorial :is(input,select,textarea):focus-visible {
+  outline:2px solid #e5c78e !important;outline-offset:3px;
+}
+.saren-editorial :is(input,select,textarea) {
+  color:#f4f0e8;
+  caret-color:#e6c889;
+}
+.saren-editorial :is(input,select,textarea)::placeholder {color:#b0bdc3}
+.saren-editorial :is(button,a){-webkit-tap-highlight-color:transparent}
+.saren-editorial :is(button,a):disabled {cursor:not-allowed}
+.saren-editorial :is(main,aside) .rounded-2xl {border-radius:1rem}
+.saren-editorial :is(main,aside) .shadow-lg {box-shadow:0 10px 24px #050d1330}
+.saren-editorial :is(main,aside) .text-\[\#71717a\],
+.saren-editorial :is(main,aside) .text-\[\#7a7a7a\] {color:#abbcc3}
+.saren-editorial :is(main,aside) .text-\[\#a1a1aa\] {color:#c1c9cb}
+.saren-editorial :is(main,aside) .text-\[\#d4af37\],
+.saren-editorial header .text-\[\#d4af37\] {color:#e0c385}
+@media(min-width:1024px){
+  .saren-editorial nav[aria-label="Workspace Navigation"].lg\:w-64 {width:17rem}
+  .saren-editorial header {padding-inline:2rem !important}
+}
+@media(max-width:1023px){
+  .saren-editorial header {align-items:stretch !important}
+  .saren-editorial nav[aria-label="Workspace Navigation"] {position:relative;z-index:2}
+}
+@media(prefers-reduced-motion:reduce){
+  .saren-editorial *,.saren-editorial *::before,.saren-editorial *::after {
+    animation-duration:.01ms !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+}
