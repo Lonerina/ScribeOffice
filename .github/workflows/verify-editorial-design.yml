@@ -29,7 +29,7 @@ jobs:
           python3 - <<'PY'
           import subprocess,sys
           files=subprocess.check_output(["git","diff","--name-only","FETCH_HEAD","HEAD"],text=True).splitlines()
-          allowed={"implementation/ScribeOffice_v5/src/App.tsx","implementation/ScribeOffice_v5/src/editorial.css",".github/workflows/verify-editorial-design.yml"}
+          allowed={"implementation/ScribeOffice_v5/src/App.tsx","implementation/ScribeOffice_v5/src/editorial.css",".github/workflows/verify-editorial-design.yml","design/SAREN_OFFICE_EDITORIAL_V2.md"}
           extra=set(files)-allowed
           if extra: print("Unexpected changes:",sorted(extra));sys.exit(1)
           original=subprocess.check_output(["git","show","FETCH_HEAD:implementation/ScribeOffice_v5/src/App.tsx"],text=True)
@@ -63,3 +63,16 @@ jobs:
             sys.exit(1)
           print("PASS: exact approved UI restructuring; all original operation handlers preserved")
           PY
+      - name: Package design candidate for staging import
+        uses: actions/upload-artifact@v4
+        with:
+          name: saren-office-editorial-v2
+          path: |
+            implementation/ScribeOffice_v5/
+            !implementation/ScribeOffice_v5/node_modules/
+            !implementation/ScribeOffice_v5/dist/
+            !implementation/ScribeOffice_v5/.env
+            !implementation/ScribeOffice_v5/.env.*
+            implementation/ScribeOffice_v5/.env.example
+          retention-days: 30
+          if-no-files-found: error
