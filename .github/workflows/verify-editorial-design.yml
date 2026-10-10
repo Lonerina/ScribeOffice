@@ -34,30 +34,30 @@ jobs:
           if extra: print("Unexpected changes:",sorted(extra));sys.exit(1)
           original=subprocess.check_output(["git","show","FETCH_HEAD:implementation/ScribeOffice_v5/src/App.tsx"],text=True)
           current=open("implementation/ScribeOffice_v5/src/App.tsx").read()
-          expected='import "./editorial.css";\\n'+original
+          expected='import "./editorial.css";\n'+original
           old='className="min-h-screen lg:h-screen lg:max-h-screen bg-[#0c0c0d] flex flex-col font-sans'
           assert expected.count(old)==1
           expected=expected.replace(old,old.replace('className="','className="saren-editorial ',1))
           expected=expected.replace('className="flex flex-wrap items-center gap-2 sm:gap-4 w-full lg:w-auto justify-end"','className="so-header-actions flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end"',1)
           expected=expected.replace('className="flex-1 flex flex-col lg:flex-row min-h-0 lg:overflow-hidden"','className="so-workspace flex-1 flex flex-col lg:flex-row min-h-0 lg:overflow-hidden"',1)
-          a=expected.index('          <button\\n            onClick={() => isSarenMode ? handleDismissSaren()')
+          a=expected.index('          <button\n            onClick={() => isSarenMode ? handleDismissSaren()')
           b=expected.index('          {/* User display name + Log Out */}',a)
           ops=expected[a:b]
-          wrapper=('          <details className="so-operations-menu">\\n'
-            '            <summary aria-label="Open Court operations"><Sliders className="w-4 h-4" /> Court operations <ChevronRight className="w-4 h-4 so-menu-chevron" /></summary>\\n'
-            '            <div className="so-operations-panel" role="group" aria-label="Court operation controls">\\n'
-            '              <p className="so-panel-eyebrow">AUTHORIZED OPERATIONS</p>\\n'
-            '              <p className="so-panel-note">Saren, Architect Bay, Azril and continuity audit. Existing authorization rules remain unchanged.</p>\\n'
-            '              <div className="so-operation-actions">\\n'
-            +ops+'              </div>\\n'
-            '            </div>\\n'
-            '          </details>\\n\\n')
+          wrapper=('          <details className="so-operations-menu">\n'
+            '            <summary aria-label="Open Court operations"><Sliders className="w-4 h-4" /> Court operations <ChevronRight className="w-4 h-4 so-menu-chevron" /></summary>\n'
+            '            <div className="so-operations-panel" role="group" aria-label="Court operation controls">\n'
+            '              <p className="so-panel-eyebrow">AUTHORIZED OPERATIONS</p>\n'
+            '              <p className="so-panel-note">Saren, Architect Bay, Azril and continuity audit. Existing authorization rules remain unchanged.</p>\n'
+            '              <div className="so-operation-actions">\n'
+            +ops+'              </div>\n'
+            '            </div>\n'
+            '          </details>\n\n')
           expected=expected[:a]+wrapper+expected[b:]
           for tab in ("dashboard","library","lore","characters","consistency"):
             marker='onClick={() => { setActiveTab("'+tab+'");'
             i=expected.index(marker)
-            after=expected.index('\\n',i)
-            expected=expected[:after+1]+'              aria-current={activeTab === "'+tab+'" ? "page" : undefined}\\n'+expected[after+1:]
+            after=expected.index('\n',i)
+            expected=expected[:after+1]+'              aria-current={activeTab === "'+tab+'" ? "page" : undefined}\n'+expected[after+1:]
           if current!=expected:
             print("FAIL: application differs beyond approved operation menu/nav/state styling changes")
             sys.exit(1)
