@@ -2322,7 +2322,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
         </div>
 
         {/* Global Controls & Account Widget */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full lg:w-auto justify-end">
+        <div className="so-header-actions flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
           
           {/* Active World Selector dropdown */}
           <div className="flex items-center gap-1.5 bg-[#1a1a1c] border border-[#333335] rounded-lg px-2.5 py-1">
@@ -2356,6 +2356,12 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
             </button>
           </div>
 
+          <details className="so-operations-menu">
+            <summary aria-label="Open Court operations"><Sliders className="w-4 h-4" /> Court operations <ChevronRight className="w-4 h-4 so-menu-chevron" /></summary>
+            <div className="so-operations-panel" role="group" aria-label="Court operation controls">
+              <p className="so-panel-eyebrow">AUTHORIZED OPERATIONS</p>
+              <p className="so-panel-note">Saren, Architect Bay, Azril and continuity audit. Existing authorization rules remain unchanged.</p>
+              <div className="so-operation-actions">
           <button
             onClick={() => isSarenMode ? handleDismissSaren() : handleManifestSaren("MANIFEST SAREN")}
             disabled={isManifestingSaren}
@@ -2411,6 +2417,10 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
             Audit Continuity
           </button>
 
+              </div>
+            </div>
+          </details>
+
           {/* User display name + Log Out */}
           <div className="flex items-center gap-2 border-l border-[#2a2a2b] pl-4">
             <span className="text-xs font-semibold text-[#999] hidden sm:inline">{user.displayName || user.email}</span>
@@ -2427,7 +2437,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
       </header>
 
       {/* CORE WORKSPACE SPLIT */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0 lg:overflow-hidden">
+      <div className="so-workspace flex-1 flex flex-col lg:flex-row min-h-0 lg:overflow-hidden">
         
         {/* COLLAPSIBLE LEFT SIDEBAR (Desktop) / TOP TABS NAVIGATION (Mobile) */}
         <nav 
@@ -2448,6 +2458,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
             {/* Sidebar Tabs */}
             <button
               onClick={() => { setActiveTab("dashboard"); setDashboardCenterView("chat"); }}
+              aria-current={activeTab === "dashboard" ? "page" : undefined}
               className={`flex items-center gap-3 px-3 py-3 rounded-xl font-display text-xs font-bold tracking-wider uppercase transition-all duration-200 cursor-pointer text-left min-h-[44px] ${
                 activeTab === "dashboard" 
                   ? "bg-[#18181b] text-[#d4af37] border-2 border-[#d4af37]/40 shadow-lg shadow-[#d4af37]/10" 
@@ -2464,6 +2475,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
 
             <button
               onClick={() => { setActiveTab("library"); }}
+              aria-current={activeTab === "library" ? "page" : undefined}
               className={`flex items-center gap-3 px-3 py-3 rounded-xl font-display text-xs font-bold tracking-wider uppercase transition-all duration-200 cursor-pointer text-left min-h-[44px] ${
                 activeTab === "library"
                   ? "bg-[#18181b] text-[#d4af37] border-2 border-[#d4af37]/40 shadow-lg shadow-[#d4af37]/10"
@@ -2481,6 +2493,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
 
             <button
               onClick={() => { setActiveTab("lore"); }}
+              aria-current={activeTab === "lore" ? "page" : undefined}
               className={`flex items-center gap-3 px-3 py-3 rounded-xl font-display text-xs font-bold tracking-wider uppercase transition-all duration-200 cursor-pointer text-left min-h-[44px] ${
                 activeTab === "lore" 
                   ? "bg-[#18181b] text-[#d4af37] border-2 border-[#d4af37]/40 shadow-lg shadow-[#d4af37]/10" 
@@ -2498,6 +2511,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
 
             <button
               onClick={() => { setActiveTab("characters"); }}
+              aria-current={activeTab === "characters" ? "page" : undefined}
               className={`flex items-center gap-3 px-3 py-3 rounded-xl font-display text-xs font-bold tracking-wider uppercase transition-all duration-200 cursor-pointer text-left min-h-[44px] ${
                 activeTab === "characters" 
                   ? "bg-[#18181b] text-[#d4af37] border-2 border-[#d4af37]/40 shadow-lg shadow-[#d4af37]/10" 
@@ -2515,6 +2529,7 @@ ${docItem.content.split("\n").map((line) => `  ${line}`).join("\n")}
 
             <button
               onClick={() => { setActiveTab("consistency"); }}
+              aria-current={activeTab === "consistency" ? "page" : undefined}
               className={`flex items-center gap-3 px-3 py-3 rounded-xl font-display text-xs font-bold tracking-wider uppercase transition-all duration-200 cursor-pointer text-left relative min-h-[44px] ${
                 activeTab === "consistency" 
                   ? "bg-[#18181b] text-[#d4af37] border-2 border-[#d4af37]/40 shadow-lg shadow-[#d4af37]/10" 
