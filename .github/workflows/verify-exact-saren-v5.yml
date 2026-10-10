@@ -336,3 +336,44 @@ jobs:
           })().catch(e=>{console.error(e);process.exitCode=1});
           JS
           npx --yes firebase-tools@14 emulators:exec --only auth,firestore --project demo-saren-auth-persist --config /tmp/saren-auth-emulators.json 'node /tmp/saren-auth-persist.cjs'
+
+      - name: Mock external tool integrations and document creation endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          cat > /tmp/saren-mock-fetch.cjs <<'JS'
+          const original=global.fetch;
+          global.fetch=async (url,opts={})=>{
+            if(String(url)==='https://api.notion.com/v1/search'){
+              return new Response(JSON.stringify({results:[{id:'mock-parent',object:'page',url:'https://notion.so/mock-parent',properties:{Name:{type:'title',title:[{plain_text:'Test Parent'}]}}}]}),{status:200,headers:{'content-type':'application/json'}});
+            }
+            if(String(url)==='https://api.notion.com/v1/pages'){
+              const payload=JSON.parse(opts.body||'{}');
+              if(payload.parent?.page_id!=='mock-parent'||!Array.isArray(payload.children))return new Response('Bad mock payload',{status:400});
+              return new Response(JSON.stringify({id:'mock-created',url:'https://notion.so/mock-created'}),{status:200,headers:{'content-type':'application/json'}});
+            }
+            return original(url,opts);
+          };
+          JS
+          NOTION_API_KEY=mock-test-key NODE_ENV=production NODE_OPTIONS="--require=/tmp/saren-mock-fetch.cjs" node dist/server.cjs > /tmp/saren-mock-server.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/api/notion/status > /tmp/saren-status.json; then break; fi
+            sleep 1
+          done
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          const root='http://127.0.0.1:3000';
+          const status=await (await fetch(root+'/api/notion/status')).json();
+          assert.equal(status.hasApiKey,true);
+          const post=async(path,data)=>{const r=await fetch(root+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});return {http:r.status,data:await r.json()}};
+          const search=await post('/api/notion/search',{});
+          assert.equal(search.http,200);assert.equal(search.data.pages?.[0]?.title,'Test Parent');
+          const missing=await post('/api/notion/export',{title:'Isolated Test',content:'# Test document'});
+          assert.equal(missing.http,400);assert.match(missing.data.error,/Parent page ID/);
+          const good=await post('/api/notion/export',{parentPageId:'mock-parent',title:'Isolated Test',content:'# Title\nBody'});
+          assert.equal(good.http,200);assert.equal(good.data.success,true);assert.equal(good.data.pageId,'mock-created');
+          console.log('PASS Notion status, mock search, required parent, mock document creation; no external page created');
+          JS
