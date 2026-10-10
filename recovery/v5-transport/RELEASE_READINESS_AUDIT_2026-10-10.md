@@ -18,12 +18,13 @@ Verification branch: `saren-v5-linux-verify-20261010`. Application source in the
 | Rules-layer signed-runtime lifecycle | 38029745106, separate emulator session | PASS |
 | HMAC signing function negatives | 38029745106 | PASS |
 | Server-side loader + emulated Firestore | 38029745106 | PASS, valid signed record restored; tampered payload, invalid signature, wrong owner/world and schema rejected |
+| Authenticated server function persistence + recall | 38032266552 | PASS, Firebase Auth + Firestore emulators; revisions 1 and 2 saved/recalled; wrong-owner access rejected |
 
 The server loader integration uses extracted actual v5 TypeScript function declarations with isolated emulator records and emulator test token. It does **not** independently establish full deployed HTTP route, real Firebase Authentication, production credentials, or a production write/read path.
 
 ## Historical items / limitations
 - Historical commit `09a4383b0d745bdbc93e0759f9717650a8d90567` remains unrecovered.
-- Production-style authenticated **server persistence -> readback** with enforced Firestore rules remains unverified.
+- Authenticated persistence and recall with Firebase Authentication + Firestore emulators PASSED on run 38032266552. This test extracted the real v5 server persist/load functions, verified revision 1 and 2 writes/recall, and wrong-owner access isolation; the production HTTP endpoint and deployment configuration remain unverified.
 - Signing-key storage/rotation, production identity provider, runtime deployment configuration, and live operational smoke tests were not verified.
 - No claim of agent continuity or cross-session state outside the explicitly stored runtime record.
 - Existing GitHub `main` is not the verified v5 source tree.
@@ -32,11 +33,12 @@ The server loader integration uses extracted actual v5 TypeScript function decla
 **VERIFY-READY, NOT RELEASE-READY.** Source and security checks support preparing an implementation candidate for review, but do not justify merging or deploying to production.
 
 ## Required pre-release gate
-1. Run authenticated server write/read/revision replay/tamper tests against isolated Firebase Auth+Firestore emulators or equivalent controlled staging; no production state.
+1. COMPLETED IN PART: Authenticated server-function persistence and recall in isolated Firebase Auth+Firestore emulators passed (run 38032266552). Still test the deployed-style HTTP route, error cases, concurrent revision conflicts, and stale/replay writes end to end.
 2. Independently review security configuration: service authorization, signing-key provisioning, request authentication and rotation/error behavior.
 3. Produce an immutable implementation candidate from the exact v5 archive, separate from the verification-only branch. Recheck hash and review diff before requesting merge.
 4. Only after these checks, seek a production release decision. No deployment authorized by this report.
 
 ## Evidence
 - Verified integration CI: https://github.com/Lonerina/ScribeOffice/actions/runs/38029745106
+- Authenticated persistence CI: https://github.com/Lonerina/ScribeOffice/actions/runs/38032266552
 - Verification branch: https://github.com/Lonerina/ScribeOffice/tree/saren-v5-linux-verify-20261010
