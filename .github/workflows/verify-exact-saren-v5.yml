@@ -625,3 +625,26 @@ jobs:
           assert original!=candidate
           print('PASS original immutable, candidate isolated; SHA256 source:',hashlib.sha256(original).hexdigest())
           PY
+
+      - name: Package isolated candidate for review
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5-document-candidate"
+          rm -rf node_modules dist apply-document-update-candidate.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile,hashlib
+          out=Path(__import__('os').environ['RUNNER_TEMP'])/'SarenOffice_v5_document_update_CANDIDATE.zip'
+          files=sorted(p for p in Path('.').rglob('*') if p.is_file())
+          with zipfile.ZipFile(out,'w',compression=zipfile.ZIP_DEFLATED) as z:
+              for p in files:z.write(p,p.as_posix())
+          print(f'CANDIDATE PACKAGE: {out.name}; files={len(files)}; sha256={hashlib.sha256(out.read_bytes()).hexdigest()}')
+          PY
+
+      - name: Upload verified candidate review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: saren-v5-document-update-candidate
+          path: ${{ runner.temp }}/SarenOffice_v5_document_update_CANDIDATE.zip
+          retention-days: 30
