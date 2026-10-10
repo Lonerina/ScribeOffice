@@ -302,7 +302,7 @@ jobs:
           const js=ts.transpileModule(nodes.map(n=>n.getText(sf)).join('\n')+'\nglobalThis.api={persistSarenHandoff,loadPersistedSarenHandoff};',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
           const project='demo-saren-auth-persist',world='integration_world',key='ci-only-auth-test-signing-key-012345678901';
           const authBase='http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1';
-          async function auth(endpoint,data){const r=await fetch(authBase+endpoint+'?key=test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});assert.ok(r.ok,'auth '+r.status+': '+await r.text());return r.json();}
+          async function auth(endpoint,data){const r=await fetch(authBase+endpoint+'?key=test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const dataText=await r.text();assert.ok(r.ok,'auth '+r.status+': '+dataText);return JSON.parse(dataText);}
           async function write(url,data,token){const r=await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(data)});assert.ok(r.ok,'world setup '+r.status+': '+await r.text());}
           (async()=>{
             const u=await auth('/accounts:signUp',{email:'owner@example.test',password:'password-for-ci-12345',returnSecureToken:true});
