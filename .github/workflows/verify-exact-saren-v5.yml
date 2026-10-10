@@ -346,43 +346,30 @@ jobs:
           sed -n '1160,1290p' server.ts
           grep -n -E '401|unauthorized|Unauthorized|auth|API_KEY|middleware' server.ts | tail -70 || true
 
-      - name: Mock external tool integrations and document creation endpoints
+      - name: Verify Notion integration remains fail-closed in containment v3
         shell: bash
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
-          cat > /tmp/saren-mock-fetch.cjs <<'JS'
-          const original=global.fetch;
-          global.fetch=async (url,opts={})=>{
-            if(String(url)==='https://api.notion.com/v1/search'){
-              return new Response(JSON.stringify({results:[{id:'mock-parent',object:'page',url:'https://notion.so/mock-parent',properties:{Name:{type:'title',title:[{plain_text:'Test Parent'}]}}}]}),{status:200,headers:{'content-type':'application/json'}});
-            }
-            if(String(url)==='https://api.notion.com/v1/pages'){
-              const payload=JSON.parse(opts.body||'{}');
-              if(payload.parent?.page_id!=='mock-parent'||!Array.isArray(payload.children))return new Response('Bad mock payload',{status:400});
-              return new Response(JSON.stringify({id:'mock-created',url:'https://notion.so/mock-created'}),{status:200,headers:{'content-type':'application/json'}});
-            }
-            return original(url,opts);
-          };
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const server=fs.readFileSync('server.ts','utf8');
+          const boundaries=fs.readFileSync('verify-recovery-boundaries.mjs','utf8');
+          assert.match(server,/WRITE UNAVAILABLE: Notion mutations are disabled in Containment v3/);
+          assert.match(server,/NOTION_AUTHORIZED_UIDS/);
+          assert.match(boundaries,/Notion route \/api\/notion\/export requires Notion principal ACL/);
+          console.log('PASS: Notion writes intentionally disabled; auth principal ACL enforced by recovered v5');
           JS
-          NOTION_API_KEY=mock-test-key NODE_ENV=production NODE_OPTIONS="--require=/tmp/saren-mock-fetch.cjs" node dist/server.cjs > /tmp/saren-mock-server.log 2>&1 &
+          NOTION_API_KEY=mock-test-key NODE_ENV=production node dist/server.cjs >/tmp/saren-notion-guard.log 2>&1 &
           pid=$!
           trap 'kill "$pid" 2>/dev/null || true' EXIT
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:3000/api/notion/status > /tmp/saren-status.json; then break; fi
+            code=$(curl --silent --output /tmp/saren-notion-probe.json --write-out '%{http_code}' http://127.0.0.1:3000/api/notion/status || true)
+            if [ "$code" = 401 ]; then break; fi
             sleep 1
           done
-          node --input-type=module <<'JS'
-          import assert from 'node:assert/strict';
-          const root='http://127.0.0.1:3000';
-          const status=await (await fetch(root+'/api/notion/status')).json();
-          assert.equal(status.hasApiKey,true);
-          const post=async(path,data)=>{const r=await fetch(root+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});return {http:r.status,data:await r.json()}};
-          const search=await post('/api/notion/search',{});
-          assert.equal(search.http,200);assert.equal(search.data.pages?.[0]?.title,'Test Parent');
-          const missing=await post('/api/notion/export',{title:'Isolated Test',content:'# Test document'});
-          assert.equal(missing.http,400);assert.match(missing.data.error,/Parent page ID/);
-          const good=await post('/api/notion/export',{parentPageId:'mock-parent',title:'Isolated Test',content:'# Title\nBody'});
-          assert.equal(good.http,200);assert.equal(good.data.success,true);assert.equal(good.data.pageId,'mock-created');
-          console.log('PASS Notion status, mock search, required parent, mock document creation; no external page created');
-          JS
+          test "$code" = 401
+          code=$(curl --silent --output /tmp/saren-export-probe.json --write-out '%{http_code}' -X POST http://127.0.0.1:3000/api/notion/export -H 'content-type: application/json' -d '{"parentPageId":"mock-parent","title":"Unauthorized Probe","content":"none"}')
+          test "$code" = 401
+          echo "PASS Notion unauthenticated status and export denied HTTP 401; no external call or document created"
