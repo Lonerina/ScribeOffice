@@ -410,10 +410,18 @@ jobs:
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
-          echo '=== Frontend inventory ==='
-          find src -maxdepth 4 -type f | head -85
-          echo '=== Document action references ==='
-          grep -RInE 'addDoc\\(|setDoc\\(|createDocument|handleCreate|saveDocument|Create Document|New Document|generate-lore|draft-update' src --include='*.tsx' --include='*.ts' | head -125 || true
-          echo '=== Collection references ==='
-          grep -RInE 'documents|collection\\(' src --include='*.tsx' --include='*.ts' | grep -E 'documents|Firestore' | head -100 || true
-          echo 'TRACE COMPLETED WITH GREP'
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const code=fs.readFileSync('src/App.tsx','utf8').split('\n');
+          const terms=['addDoc(', 'setDoc(', 'createDocument','handleCreate','saveDocument','Create Document','New Document','generate-lore','draft-update','documents'];
+          let matches=0;
+          for(let i=0;i<code.length;i++){
+            if(terms.some(t=>code[i].includes(t))){
+              console.log(String(i+1).padStart(4,' '),code[i].slice(0,220));
+              matches++;
+            }
+          }
+          assert.ok(matches>5,'expected frontend document references');
+          console.log('TRACE: '+matches+' frontend references');
+          JS
