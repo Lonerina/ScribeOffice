@@ -222,3 +222,62 @@ jobs:
           assert.ok(source.includes('if (signature !== expectedSignature)'),'server must reject wrong signature');
           console.log('PASS: real v5 HMAC functions; deterministic, field tampering, wrong key, short key, reject branch');
           JS
+
+      - name: Integration-test real v5 loader against isolated Firestore emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          cat > /tmp/saren-hmac-integration-test.cjs <<'JS'
+          const fs=require('node:fs'),vm=require('node:vm'),crypto=require('node:crypto'),assert=require('node:assert/strict'),ts=require(process.cwd()+'/node_modules/typescript');
+          const src=fs.readFileSync('server.ts','utf8');
+          function extract(name){
+            const start=src.indexOf('function '+name+'(');
+            assert.ok(start>=0,'function missing: '+name);
+            let i=src.indexOf('{',start),depth=0,inString=false,quote='';
+            for(let j=i;j<src.length;j++){
+              const c=src[j]; if(inString){if(c==='\\'){j++;continue;}if(c===quote)inString=false;continue;}
+              if(c==='"'||c==="'"||c==='\x60'){inString=true;quote=c;continue;}
+              if(c==='{')depth++;if(c==='}'&&!--depth)return src.slice(start,j+1);
+            }
+            throw Error('unclosed function '+name);
+          }
+          const names=['requireSarenRuntimeSigningKey','signSarenRuntimeRecord','loadPersistedSarenHandoff'];
+          // Use TS AST to extract complete functions rather than text searching (types and nested braces).
+          const sf=ts.createSourceFile('server.ts',src,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
+          const nodes=sf.statements.filter(n=>ts.isFunctionDeclaration(n)&&names.includes(n.name?.text));
+          assert.equal(nodes.length,3);
+          const tsCode=nodes.map(n=>n.getText(sf)).join('\n')+'\nglobalThis.__target={signSarenRuntimeRecord,loadPersistedSarenHandoff};';
+          const js=ts.transpileModule(tsCode,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+          const key='ci-only-integration-signing-key-0123456789';
+          const env={SAREN_RUNTIME_SIGNING_KEY:key,FIRESTORE_EMULATOR_HOST:process.env.FIRESTORE_EMULATOR_HOST};
+          const ctx={crypto,process:{env},fetch:global.fetch,console,readJsonFile:async()=>({projectId:'demo-saren-integration',firestoreDatabaseId:'(default)',apiKey:'test-only'}),isValidId:s=>/^[a-zA-Z0-9_-]{1,128}$/.test(s),isValidSarenHandoff:obj=>obj?.schemaVersion==='saren-handoff-v3'};
+          vm.runInNewContext(js,ctx);
+          const {signSarenRuntimeRecord:sign,loadPersistedSarenHandoff:load}=ctx.__target;
+          const host='http://'+env.FIRESTORE_EMULATOR_HOST;
+          const world='integration_world',owner='integration_owner';
+          const path='/v1/projects/demo-saren-integration/databases/(default)/documents/worlds/'+world+'/runtime/saren-signed-v3';
+          const base={agent:'Saren Nur Tsaiyunk',worldId:world,ownerId:owner,revision:1,updatedAt:new Date().toISOString(),handoffJson:JSON.stringify({schemaVersion:'saren-handoff-v3',sessionId:'integration'})};
+          async function put(values){
+            const fields={};for(const [k,v] of Object.entries(values))fields[k]=typeof v==='number'?{integerValue:String(v)}:{stringValue:v};
+            const res=await fetch(host+path,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields})});
+            assert.ok(res.ok,'emulator test fixture write '+res.status+' '+(await res.text()));
+          }
+          async function check(label,mutate,expected){
+            const rec={...base,signature:sign(base.worldId,base.ownerId,base.revision,base.updatedAt,base.handoffJson)};mutate(rec);
+            await put(rec);
+            const result=await load(world,owner);
+            assert.equal(result.status,expected,label+': '+JSON.stringify({status:result.status,error:result.error}));
+            console.log('PASS',label,result.status);
+          }
+          (async()=>{
+            await check('valid signed record',()=>{},'restored');
+            await check('tampered handoffJson',r=>r.handoffJson+=' ', 'malformed');
+            await check('wrong signature',r=>r.signature='f'.repeat(64),'malformed');
+            await check('owner scope mismatch',r=>r.ownerId='other_owner','mismatched_scope');
+            await check('world scope mismatch',r=>r.worldId='other_world','mismatched_scope');
+            await check('signed but invalid handoff schema',r=>{r.handoffJson=JSON.stringify({schemaVersion:'unknown'});r.signature=sign(r.worldId,r.ownerId,r.revision,r.updatedAt,r.handoffJson)},'malformed');
+            console.log('SERVER LOADER / FIRESTORE EMULATOR INTEGRATION PASSED');
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          JS
+          npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-saren-integration --config firebase.json 'node /tmp/saren-hmac-integration-test.cjs'
