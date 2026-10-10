@@ -404,3 +404,13 @@ jobs:
           })().catch(e=>{console.error(e);process.exitCode=1});
           JS
           npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-saren-doc-create --config firebase.json 'node /tmp/saren-document-create-test.cjs'
+
+      - name: Trace document creation UI to persistence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          echo '=== Document frontend file references ==='
+          rg -n 'addDoc\(|setDoc\(|createDocument|handleCreate|saveDocument|Create Document|New Document|generate-lore|draft-update' src --glob '!**/*.css' | head -110 || true
+          echo '=== Document Firestore collection references ==='
+          rg -n -C 3 'collection\([^\n]*documents|doc\([^\n]*documents' src | head -130 || true
