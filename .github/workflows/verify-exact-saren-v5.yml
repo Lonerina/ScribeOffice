@@ -425,3 +425,13 @@ jobs:
           assert.ok(matches>5,'expected frontend document references');
           console.log('TRACE: '+matches+' frontend references');
           JS
+
+      - name: Inspect exact document save handler and rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          echo '=== FRONTEND SAVE ==='
+          nl -ba src/App.tsx | sed -n '1820,1990p'
+          echo '=== DOCUMENT RULES ==='
+          nl -ba firestore.rules | sed -n '175,223p'
