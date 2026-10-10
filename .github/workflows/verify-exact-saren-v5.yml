@@ -181,3 +181,44 @@ jobs:
           set -euo pipefail
           cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
           sed -n '335,565p' server.ts
+
+      - name: Exercise extracted approved server HMAC implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          node --input-type=commonjs <<'JS'
+          const fs=require('node:fs');
+          const vm=require('node:vm');
+          const crypto=require('node:crypto');
+          const ts=require('typescript');
+          const assert=require('node:assert/strict');
+          const source=fs.readFileSync('server.ts','utf8');
+          function extract(name) {
+            const start=source.indexOf('function '+name+'(');
+            assert.ok(start>=0, name+' must be present');
+            const finish=source.indexOf('\n}', start);
+            assert.ok(finish>start, name+' missing closing brace');
+            return source.slice(start,finish+2);
+          }
+          const body=extract('requireSarenRuntimeSigningKey')+'\n'+extract('signSarenRuntimeRecord')+'\n'+'globalThis.sign=signSarenRuntimeRecord;';
+          const js=ts.transpileModule(body,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
+          const processMock={env:{SAREN_RUNTIME_SIGNING_KEY:'unit-test-key-only-0123456789-abcdef-0123456789'}};
+          const scope={crypto,process:processMock};
+          vm.runInNewContext(js,scope);
+          const sign=scope.sign;
+          const fields=['test-world','test-owner',1,'2026-10-10T00:00:00.000Z','{"schemaVersion":"saren-handoff-v3"}'];
+          const good=sign(...fields);
+          assert.match(good,/^[a-f0-9]{64}$/);
+          assert.equal(sign(...fields),good);
+          for(let i=0;i<fields.length;i++){
+            const changed=[...fields];changed[i]=i===2?2:changed[i]+'-changed';
+            assert.notEqual(sign(...changed),good,'field '+i+' tamper must change signature');
+          }
+          processMock.env.SAREN_RUNTIME_SIGNING_KEY='different-test-key-0123456789-abcdef-0123456789';
+          assert.notEqual(sign(...fields),good,'wrong key must change signature');
+          processMock.env.SAREN_RUNTIME_SIGNING_KEY='short';
+          assert.throws(()=>sign(...fields),/at least 32 characters/);
+          assert.ok(source.includes('if (signature !== expectedSignature)'),'server must reject wrong signature');
+          console.log('PASS: real v5 HMAC functions; deterministic, field tampering, wrong key, short key, reject branch');
+          JS
