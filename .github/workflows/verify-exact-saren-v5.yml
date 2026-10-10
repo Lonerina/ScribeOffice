@@ -589,3 +589,38 @@ jobs:
           })().catch(e=>{console.error(e);process.exitCode=1});
           JS
           npx --yes firebase-tools@14 emulators:exec --only firestore --project demo-saren-safe-revision --config firebase.json 'node /tmp/saren-safe-revision.cjs'
+
+      - name: Verify isolated document-update candidate and original archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          original="$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          candidate="$RUNNER_TEMP/saren-v5-document-candidate"
+          cp -a "$original" "$candidate"
+          cp recovery/v5-transport/apply-document-update-candidate.py "$candidate/apply-document-update-candidate.py"
+          cd "$candidate"
+          python3 apply-document-update-candidate.py
+          npm run lint
+          npm run build
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const text=fs.readFileSync('src/App.tsx','utf8');
+          const segment=text.slice(text.indexOf('  const handleCommitUpdate = async () => {'),text.indexOf('  const handleSaveWorldSettings ='));
+          assert.match(segment,/docToUpdate\.provenance\?\.origin !== "user"/);
+          assert.match(segment,/explicitly reviewed and approved by user/);
+          assert.match(segment,/await updateDoc\(docRef/);
+          assert.doesNotMatch(segment,/await setDoc\(docRef/);
+          assert.doesNotMatch(segment,/origin: "generated"/);
+          assert.match(segment,/updatedAt: new Date\(\)\.toISOString\(\)/);
+          console.log('PASS reviewed update frontend path preserves existing provenance and documents user approval');
+          JS
+          cd "$original"
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          original=Path('src/App.tsx').read_bytes()
+          candidate=Path(__import__('os').environ['RUNNER_TEMP']+'/saren-v5-document-candidate/src/App.tsx').read_bytes()
+          assert original!=candidate
+          print('PASS original immutable, candidate isolated; SHA256 source:',hashlib.sha256(original).hexdigest())
+          PY
