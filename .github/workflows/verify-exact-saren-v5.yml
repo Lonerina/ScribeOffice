@@ -142,3 +142,16 @@ jobs:
           nl -ba verify-saren-lifecycle.mjs | sed -n '1,110p'
           echo '=== Matched rules test successful fixtures ==='
           grep -n -C 6 'runtime.*create\|revision 1\|runtimeRecord' test-rules-emulator.mjs | head -95 || true
+
+      - name: Diagnose runtime schema predicate without changing source
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          echo "=== isValidRuntimeState definition ==="
+          grep -n -A 42 -B 4 'function isValidRuntimeState' firestore.rules
+          echo "=== ownsWorld definition ==="
+          grep -n -A 14 -B 4 'function ownsWorld' firestore.rules
+          echo "=== successful runtime creation assertions ==="
+          grep -n -A 12 -B 8 'runtime.*create\|revision 1' test-rules-emulator.mjs | tail -110
