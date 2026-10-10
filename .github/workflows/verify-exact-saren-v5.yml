@@ -1,0 +1,97 @@
+name: Verify exact Saren Office v5 archive (isolated)
+
+on:
+  push:
+    branches:
+      - saren-v5-linux-verify-20261010
+
+permissions:
+  contents: read
+
+jobs:
+  verify-v5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout pinned transport branch
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Reconstruct approved archive without source substitution
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/saren-v5"
+          cp recovery/v5-transport/ScribeOffice_v5_payload_manifest.json "$RUNNER_TEMP/saren-v5/"
+          cp recovery/v5-transport/ScribeOffice_v5_payload_part_*_of_22.txt "$RUNNER_TEMP/saren-v5/"
+          cp recovery/v5-transport/restore_ScribeOffice_v5_from_parts.py.txt "$RUNNER_TEMP/saren-v5/restore_ScribeOffice_v5_from_parts.py"
+          cd "$RUNNER_TEMP/saren-v5"
+          python3 restore_ScribeOffice_v5_from_parts.py
+          python3 - <<'PY'
+          import hashlib, json, pathlib, zipfile
+          p = pathlib.Path("ScribeOffice_recovery_candidate_v5_20261009.zip")
+          manifest = json.loads(pathlib.Path("ScribeOffice_v5_payload_manifest.json").read_text())
+          assert p.stat().st_size == manifest["raw_bytes"]
+          assert hashlib.sha256(p.read_bytes()).hexdigest() == manifest["sha256"]
+          with zipfile.ZipFile(p) as z:
+              names = [x for x in z.namelist() if not x.endswith("/")]
+              assert len(names) == 104 and len(names) == len(set(names))
+              root = pathlib.Path("ScribeOffice_v5_exact").resolve()
+              for name in names:
+                  target = (root / name).resolve()
+                  assert target.is_relative_to(root), name
+                  assert target.read_bytes() == z.read(name), name
+          print("VERIFIED: 104/104 extracted files, ZIP and SHA-256")
+          PY
+
+      - name: Static boundary verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          node verify-recovery-boundaries.mjs
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          npm install --no-audit --no-fund
+
+      - name: TypeScript lint
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          npm run lint
+
+      - name: Unchanged production build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5/ScribeOffice_v5_exact"
+          npm run build
+
+      - name: Check approved source file bytes again
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/saren-v5"
+          python3 - <<'PY'
+          import zipfile, pathlib, hashlib
+          archive = pathlib.Path("ScribeOffice_recovery_candidate_v5_20261009.zip")
+          root = pathlib.Path("ScribeOffice_v5_exact")
+          with zipfile.ZipFile(archive) as z:
+              names = [n for n in z.namelist() if not n.endswith("/")]
+              mismatches = [n for n in names if not (root/n).is_file() or (root/n).read_bytes() != z.read(n)]
+          print("SOURCE CORRESPONDENCE:", len(names)-len(mismatches), "/", len(names))
+          if mismatches:
+              print("MISMATCHES:", mismatches)
+              raise SystemExit(1)
+          print("ARCHIVE SHA-256:", hashlib.sha256(archive.read_bytes()).hexdigest())
+          PY
